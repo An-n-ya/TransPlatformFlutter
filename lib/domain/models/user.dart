@@ -7,6 +7,7 @@
 ///   "nickname": "Alice",
 ///   "avatar": "http://...",
 ///   "bio": "Hello!",
+///   "bioHeaderImg": "http://...",
 ///   "status": 1,
 ///   "followersCount": 42,
 ///   "followeesCount": 7,
@@ -19,6 +20,7 @@ class User {
   final String nickname;
   final String? avatar;
   final String? bio;
+  final String? bioHeaderImg;
   final int status;
   final int? followersCount;
   final int? followeesCount;
@@ -30,6 +32,7 @@ class User {
     required this.nickname,
     this.avatar,
     this.bio,
+    this.bioHeaderImg,
     this.status = 1,
     this.followersCount,
     this.followeesCount,
@@ -43,6 +46,7 @@ class User {
       nickname: json['nickname'] as String? ?? '',
       avatar: json['avatar'] as String?,
       bio: json['bio'] as String?,
+      bioHeaderImg: json['bioHeaderImg'] as String?,
       status: json['status'] as int? ?? 1,
       followersCount: json['followersCount'] as int?,
       followeesCount: json['followeesCount'] as int?,
@@ -58,6 +62,7 @@ class User {
         'nickname': nickname,
         'avatar': avatar,
         'bio': bio,
+        'bioHeaderImg': bioHeaderImg,
         'status': status,
         'followersCount': followersCount,
         'followeesCount': followeesCount,

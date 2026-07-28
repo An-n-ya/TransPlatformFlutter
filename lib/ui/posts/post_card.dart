@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../domain/models/post.dart';
+import '../user/user_detail_page.dart';
 import 'photo_grid.dart';
 
 /// A feed-style list of [PostCard]s.
@@ -40,6 +41,11 @@ class PostCard extends StatelessWidget {
           ListTile(
             leading: ClipOval(child: _buildAvatar(context)),
             title: Text(post.author.nickname),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => UserDetailPage(user: post.author),
+              ),
+            ),
             subtitle: Row(
               children: [
                 Text(_formatDate(post.createdAt)),
