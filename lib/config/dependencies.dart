@@ -11,13 +11,23 @@ import '../data/repositories/user/user_repository.dart';
 import '../data/repositories/user/user_repository_local.dart';
 import '../data/repositories/user/user_repository_remote.dart';
 import '../data/services/api/api_client.dart';
+import '../data/services/token_storage_service.dart';
 import 'env.dart';
+
+// ============================================================
+// Shared providers (used by both modes)
+// ============================================================
+
+final List<SingleChildWidget> _sharedProviders = [
+  Provider<TokenStorageService>(create: (_) => TokenStorageService()),
+];
 
 // ============================================================
 // Local data mode — hardcoded sample data, no backend needed
 // ============================================================
 
 List<SingleChildWidget> get providersLocal => [
+      ..._sharedProviders,
       Provider<PostRepository>(create: (_) => PostRepositoryLocal()),
       Provider<UserRepository>(create: (_) => UserRepositoryLocal()),
       Provider<AuthRepository>(create: (_) => AuthRepositoryLocal()),
@@ -28,12 +38,12 @@ List<SingleChildWidget> get providersLocal => [
 // ============================================================
 
 List<SingleChildWidget> get providersRemote => [
+      ..._sharedProviders,
+
       // Shared HTTP client with JWT token from env
       Provider<ApiClient>(
         create: (_) => ApiClient(
           baseUrl: Env.apiBaseUrl,
-          accessToken: Env.accessToken,
-          refreshToken: Env.refreshToken,
         ),
       ),
 

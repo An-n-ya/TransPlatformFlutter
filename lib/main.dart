@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'config/dependencies.dart';
-import 'ui/auth/login_page.dart';
+import 'ui/auth/splash_page.dart';
 
 /// Default entry: runs in local mode (no backend needed).
 ///
@@ -19,12 +19,16 @@ void main() {
   );
 }
 
-/// Main app widget. Shows [LoginPage] on start.
+/// Main app widget.
+///
+/// On start, shows [SplashPage] which checks for a saved session.
+/// - Token cached → auto-navigate to [TScaffold]
+/// - No token     → show [LoginPage]
 class MainApp extends StatelessWidget {
   const MainApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(home: LoginPage());
+    return const MaterialApp(home: SplashPage());
   }
 }

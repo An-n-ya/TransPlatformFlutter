@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/repositories/auth/auth_repository.dart';
+import '../../data/services/token_storage_service.dart';
 import '../../domain/models/auth_response.dart';
 import '../../utils/result.dart';
 import '../home/main_scaffold.dart';
@@ -51,11 +52,18 @@ class _LoginPageState extends State<LoginPage> {
     if (!mounted) return;
 
     switch (result) {
-      case Ok<AuthResponse>():
+      case Ok<AuthResponse>():{
+        // Persist tokens securely
+        await context.read<TokenStorageService>().saveTokens(
+              accessToken: result.value.accessToken,
+              refreshToken: result.value.refreshToken,
+            );
+        if (!mounted) return;
+
         // Navigate to main app, replacing login page
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const TScaffold()),
-        );
+        );}
       case Error<AuthResponse>():
         setState(() {
           _isLoading = false;
