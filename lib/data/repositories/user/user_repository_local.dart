@@ -1,0 +1,64 @@
+import '../../../domain/models/user.dart';
+import '../../../utils/result.dart';
+import 'user_repository.dart';
+
+/// Local implementation of [UserRepository].
+class UserRepositoryLocal implements UserRepository {
+  @override
+  Future<Result<User>> getCurrentUser() async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    return Result.ok(_demoUser);
+  }
+
+  @override
+  Future<Result<User>> getUser(int userId) async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    return Result.ok(_demoUser);
+  }
+
+  @override
+  Future<Result<User>> updateUser({
+    String? nickname,
+    String? avatar,
+    String? bio,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    return Result.ok(_demoUser);
+  }
+
+  @override
+  Future<Result<void>> follow(int userId) async {
+    await Future.delayed(const Duration(milliseconds: 100));
+    return Result.ok(null);
+  }
+
+  @override
+  Future<Result<void>> unfollow(int userId) async {
+    await Future.delayed(const Duration(milliseconds: 100));
+    return Result.ok(null);
+  }
+
+  @override
+  Future<Result<List<User>>> getFollowers(int userId,
+      {int page = 0, int size = 20}) async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    return Result.ok([_demoUser]);
+  }
+
+  @override
+  Future<Result<List<User>>> getFollowees(int userId,
+      {int page = 0, int size = 20}) async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    return Result.ok([_demoUser]);
+  }
+
+  User get _demoUser => const User(
+        id: 1,
+        username: 'alice',
+        nickname: 'Alice',
+        avatar: 'assets/images/avatar.jpg',
+        bio: 'Exploring the world 🌍',
+        followersCount: 128,
+        followeesCount: 42,
+      );
+}

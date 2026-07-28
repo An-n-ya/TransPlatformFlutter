@@ -1,21 +1,14 @@
 import 'package:flutter/material.dart';
 
 class PhotoGrid extends StatelessWidget {
-  final List<String> images = [
-    'assets/images/avatar.jpg',
-    'assets/images/avatar.jpg',
-    'assets/images/avatar.jpg',
-    'assets/images/avatar.jpg',
-    'assets/images/avatar.jpg',
-    'assets/images/avatar.jpg',
-    'assets/images/avatar.jpg',
-    'assets/images/avatar.jpg',
-  ];
+  final List<String> images;
 
-  PhotoGrid({super.key});
+  const PhotoGrid({super.key, required this.images});
 
   @override
   Widget build(BuildContext context) {
+    if (images.isEmpty) return const SizedBox.shrink();
+
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -29,9 +22,29 @@ class PhotoGrid extends StatelessWidget {
       itemBuilder: (context, index) {
         return ClipRRect(
           borderRadius: BorderRadius.circular(10),
-          child: Image.asset(images[index], fit: BoxFit.cover),
+          child: _buildImage(images[index]),
         );
       },
     );
   }
+
+  Widget _buildImage(String url) {
+    if (url.startsWith('http')) {
+      return Image.network(
+        url,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => _placeholder,
+      );
+    }
+    return Image.asset(
+      url,
+      fit: BoxFit.cover,
+      errorBuilder: (_, _, _) => _placeholder,
+    );
+  }
+
+  Widget get _placeholder => Container(
+        color: Colors.grey[200],
+        child: const Icon(Icons.broken_image, color: Colors.grey),
+      );
 }

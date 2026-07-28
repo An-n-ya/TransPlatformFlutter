@@ -1,0 +1,59 @@
+import '../../../domain/models/comment.dart';
+import '../../../domain/models/post.dart';
+import '../../../utils/result.dart';
+
+/// Data source for posts and feed.
+///
+/// Implementations:
+/// - [PostRepositoryLocal] — hardcoded sample data for UI development
+/// - [PostRepositoryRemote] — calls the backend API
+abstract class PostRepository {
+  /// Get the homepage feed (paginated).
+  Future<Result<List<Post>>> getFeed({int page = 0, int size = 20});
+
+  /// Get a single post by ID.
+  Future<Result<Post>> getPost(int postId);
+
+  /// Get all posts by a specific user (paginated).
+  Future<Result<List<Post>>> getUserPosts(int userId,
+      {int page = 0, int size = 20});
+
+  /// Create a new post.
+  Future<Result<Post>> createPost({
+    required String content,
+    List<String>? images,
+    String? location,
+  });
+
+  /// Delete a post.
+  Future<Result<void>> deletePost(int postId);
+
+  // ---- Interactions ----
+
+  /// Like a post.
+  Future<Result<void>> likePost(int postId);
+
+  /// Unlike a post.
+  Future<Result<void>> unlikePost(int postId);
+
+  /// Get comments for a post (paginated).
+  Future<Result<List<Comment>>> getPostComments(int postId,
+      {int page = 0, int size = 20});
+
+  /// Create a comment on a post.
+  Future<Result<Comment>> createComment(
+    int postId, {
+    required String content,
+    int? parentId,
+    int? replyToUserId,
+  });
+
+  /// Delete a comment.
+  Future<Result<void>> deleteComment(int commentId);
+
+  /// Collect a post.
+  Future<Result<void>> collectPost(int postId);
+
+  /// Uncollect a post.
+  Future<Result<void>> uncollectPost(int postId);
+}
