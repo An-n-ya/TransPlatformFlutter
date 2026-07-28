@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:trans_platform/ui/feeds/MomentCard.dart';
+import 'package:trans_platform/ui/settings/settings_page.dart';
 
 /// Main scaffold with bottom navigation bar.
 ///
@@ -129,7 +130,11 @@ class _HomePage extends StatelessWidget {
             ),
             IconButton(
               icon: const Icon(Icons.settings),
-              onPressed: () {},
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const SettingsPage()),
+                );
+              },
             ),
           ],
           title: const Text('Test'),
