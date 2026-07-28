@@ -138,16 +138,26 @@ class SettingsPage extends StatelessWidget {
   }
 
   Future<void> _handleLogout(BuildContext context) async {
+    // Capture references before any async gap
+    final navigator = Navigator.of(context);
+    final storage = context.read<TokenStorageService>();
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('退出登录'),
         content: const Text('确定要退出登录吗？'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: Text('退出', style: TextStyle(color: Theme.of(ctx).colorScheme.error)),
+            child: Text(
+              '退出',
+              style: TextStyle(color: Theme.of(ctx).colorScheme.error),
+            ),
           ),
         ],
       ),
@@ -156,11 +166,10 @@ class SettingsPage extends StatelessWidget {
     if (confirmed != true) return;
 
     // Clear stored tokens
-    await context.read<TokenStorageService>().clearTokens();
-    if (!context.mounted) return;
+    await storage.clearTokens();
 
     // Navigate back to login, clearing the entire navigation stack
-    Navigator.of(context).pushAndRemoveUntil(
+    navigator.pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const LoginPage()),
       (_) => false,
     );

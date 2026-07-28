@@ -5,11 +5,11 @@ import '../../data/repositories/auth/auth_repository.dart';
 import '../../data/services/token_storage_service.dart';
 import '../../domain/models/auth_response.dart';
 import '../../utils/result.dart';
-import '../home/main_scaffold.dart';
+import '../home/app_shell.dart';
 
 /// Login page with username and password fields.
 ///
-/// On successful login, navigates to [TScaffold] (the main app shell).
+/// On successful login, navigates to [AppShell] (the main app shell).
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -62,7 +62,7 @@ class _LoginPageState extends State<LoginPage> {
 
         // Navigate to main app, replacing login page
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const TScaffold()),
+          MaterialPageRoute(builder: (_) => const AppShell()),
         );}
       case Error<AuthResponse>():
         setState(() {

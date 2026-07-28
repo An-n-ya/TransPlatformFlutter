@@ -22,7 +22,7 @@ void main() {
 /// Main app widget.
 ///
 /// On start, shows [SplashPage] which checks for a saved session.
-/// - Token cached → auto-navigate to [TScaffold]
+/// - Token cached → auto-navigate to [AppShell]
 /// - No token     → show [LoginPage]
 class MainApp extends StatelessWidget {
   const MainApp({super.key});

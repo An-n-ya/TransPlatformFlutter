@@ -3,12 +3,12 @@ import 'package:provider/provider.dart';
 
 import '../../data/services/api/api_client.dart';
 import '../../data/services/token_storage_service.dart';
-import '../home/main_scaffold.dart';
+import '../home/app_shell.dart';
 import 'login_page.dart';
 
 /// Shown on app startup while checking for a saved login session.
 ///
-/// - Token found → auto-navigate to [TScaffold] (restore session)
+/// - Token found → auto-navigate to [AppShell] (restore session)
 /// - No token   → navigate to [LoginPage]
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -44,7 +44,7 @@ class _SplashPageState extends State<SplashPage> {
       }
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const TScaffold()),
+        MaterialPageRoute(builder: (_) => const AppShell()),
       );
     } else {
       // No saved session → show login
