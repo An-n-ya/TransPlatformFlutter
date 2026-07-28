@@ -5,7 +5,14 @@ class Env {
   Env._();
 
   /// Backend API base URL.
-  static const String apiBaseUrl = 'http://localhost:8081';
+  ///
+  /// ⚠️ 根据运行环境修改：
+  /// - Android 模拟器 → http://10.0.2.2:8081
+  /// - iOS 模拟器     → http://localhost:8081（默认即可）
+  /// - 真机（同一 WiFi）→ http://192.168.1.14:8081
+  /// - Web 浏览器     → http://localhost:8081
+  /// - Tailscale 远程 → http://100.122.220.40:8081
+  static const String apiBaseUrl = 'http://10.0.2.2:8081';
 
   /// JWT access token for remote mode.
   ///
@@ -22,5 +29,5 @@ class Env {
       'eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiIyIiwidXNlcm5hbWUiOiJib2IiLCJ0eXBlIjoiYWNjZXNzIiwiaWF0IjoxNzg1MTYxNDg4LCJleHAiOjE3ODUyNDc4ODh9.h_Aq8o1Ejx1X_4Iscg7xhIyOpnMMsGyLL9PrV5N1dlJpijTUmTulXe9I7C4Z5Nhi';
 
   /// Refresh token (optional, for token refresh).
-  static const String? refreshToken = null; // ignore: unnecessary_nullable_for_final_variable_declarations
+  static const String? refreshToken = null;
 }

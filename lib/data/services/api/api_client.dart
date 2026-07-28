@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
@@ -13,18 +14,20 @@ import 'page_result.dart';
 class ApiClient {
   final String baseUrl;
   final http.Client _httpClient;
+  final Duration _timeout;
   String? _accessToken;
   String? _refreshToken;
 
   ApiClient({
-    // this.baseUrl = 'http://100.122.220.40:8081',
     this.baseUrl = 'http://localhost:8081',
     http.Client? httpClient,
     String? accessToken,
     String? refreshToken,
+    Duration? timeout,
   })  : _httpClient = httpClient ?? http.Client(),
         _accessToken = accessToken,
-        _refreshToken = refreshToken;
+        _refreshToken = refreshToken,
+        _timeout = timeout ?? const Duration(seconds: 15);
 
   // ---- Token management ----
 
@@ -45,7 +48,7 @@ class ApiClient {
 
   // ---- HTTP methods ----
 
-  /// GET request, returns parsed [ApiResponse].
+  /// GET request, returns parsed [ApiResponse] data.
   Future<Result<T>> get<T>(
     String path, {
     Map<String, String>? queryParams,
@@ -60,25 +63,19 @@ class ApiClient {
     );
   }
 
-  /// GET request expecting a [PageResult].
+  /// GET request expecting a [PageResult] — single HTTP call.
   Future<Result<PageResult<T>>> getPage<T>(
     String path, {
     Map<String, String>? queryParams,
     required T Function(dynamic) fromItem,
   }) async {
-    final result = await get<List<dynamic>>(
-      path,
-      queryParams: queryParams,
-      fromData: null, // we parse manually
+    return _request(
+      () => _httpClient.get(
+        _buildUri(path, queryParams),
+        headers: _headers,
+      ),
+      (data) => PageResult.fromJson(data as Map<String, dynamic>, fromItem),
     );
-    switch (result) {
-      case Ok<List<dynamic>>():
-        // The ApiResponse's data is already the full page JSON object
-        // But we need the raw map. Let's re-fetch.
-        return _requestPage(path, queryParams, fromItem);
-      case Error<List<dynamic>>():
-        return Result.error(result.error);
-    }
   }
 
   /// POST request with JSON body.
@@ -148,16 +145,21 @@ class ApiClient {
     return uri;
   }
 
+  /// Core request handler.
+  ///
+  /// 1. Makes the HTTP call with timeout
+  /// 2. Checks HTTP status code
+  /// 3. Parses the unified [ApiResponse] wrapper
+  /// 4. Extracts data via [fromData] callback
   Future<Result<T>> _request<T>(
     Future<http.Response> Function() requestFn,
     T Function(dynamic)? fromData,
   ) async {
     try {
-      final response = await requestFn();
+      final response = await requestFn().timeout(_timeout);
 
-      // Handle non-2xx HTTP status codes (e.g. 403 with empty body)
+      // ---- Non-2xx: try to parse error body, fall back to status code ----
       if (response.statusCode < 200 || response.statusCode >= 300) {
-        // Try to parse error body, fall back to status code message
         if (response.body.isEmpty) {
           return Result.error(
             ApiException(response.statusCode, 'HTTP ${response.statusCode}'),
@@ -178,11 +180,12 @@ class ApiClient {
         }
       }
 
-      // Handle empty success body (e.g. DELETE returns 200 with no content)
+      // ---- Empty body (e.g. DELETE 200 with no content) ----
       if (response.body.isEmpty) {
         return Result.ok(null as T);
       }
 
+      // ---- Parse the unified ApiResponse wrapper ----
       final body = jsonDecode(response.body) as Map<String, dynamic>;
       final apiResponse = ApiResponse<T>.fromJson(body, fromData);
 
@@ -193,57 +196,14 @@ class ApiClient {
           ApiException(apiResponse.code, apiResponse.message),
         );
       }
-    } on Exception catch (e) {
-      return Result.error(e);
-    }
-  }
-
-  Future<Result<PageResult<T>>> _requestPage<T>(
-    String path,
-    Map<String, String>? queryParams,
-    T Function(dynamic) fromItem,
-  ) async {
-    try {
-      final response = await _httpClient.get(
-        _buildUri(path, queryParams),
-        headers: _headers,
+    } on TimeoutException catch (e) {
+      return Result.error(
+        ApiException(0, '请求超时: $e'),
       );
-
-      // Handle non-2xx HTTP status codes
-      if (response.statusCode < 200 || response.statusCode >= 300) {
-        if (response.body.isEmpty) {
-          return Result.error(
-            ApiException(response.statusCode, 'HTTP ${response.statusCode}'),
-          );
-        }
-        try {
-          final errBody = jsonDecode(response.body) as Map<String, dynamic>;
-          return Result.error(
-            ApiException(
-              errBody['code'] as int? ?? response.statusCode,
-              errBody['message'] as String? ?? 'Unknown error',
-            ),
-          );
-        } catch (_) {
-          return Result.error(
-            ApiException(response.statusCode, 'HTTP ${response.statusCode}'),
-          );
-        }
-      }
-
-      final body = jsonDecode(response.body) as Map<String, dynamic>;
-      final apiResponse =
-          ApiResponse<PageResult<T>>.fromJson(body, (data) {
-        return PageResult.fromJson(data as Map<String, dynamic>, fromItem);
-      });
-
-      if (apiResponse.isSuccess && apiResponse.data != null) {
-        return Result.ok(apiResponse.data!);
-      } else {
-        return Result.error(
-          ApiException(apiResponse.code, apiResponse.message),
-        );
-      }
+    } on http.ClientException catch (e) {
+      return Result.error(e);
+    } on FormatException catch (e) {
+      return Result.error(e);
     } on Exception catch (e) {
       return Result.error(e);
     }
