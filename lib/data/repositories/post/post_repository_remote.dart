@@ -59,6 +59,42 @@ class PostRepositoryRemote implements PostRepository {
   }
 
   @override
+  Future<Result<List<Post>>> getLikedPosts({int page = 0, int size = 20}) async {
+    final result = await _api.getPage<Post>(
+      '/api/v1/users/me/liked-posts',
+      queryParams: {
+        'page': page.toString(),
+        'size': size.toString(),
+      },
+      fromItem: (data) => Post.fromJson(data as Map<String, dynamic>),
+    );
+    switch (result) {
+      case Ok<PageResult<Post>>():
+        return Result.ok(result.value.content);
+      case Error<PageResult<Post>>():
+        return Result.error(result.error);
+    }
+  }
+
+  @override
+  Future<Result<List<Post>>> getCollectedPosts({int page = 0, int size = 20}) async {
+    final result = await _api.getPage<Post>(
+      '/api/v1/users/me/collected-posts',
+      queryParams: {
+        'page': page.toString(),
+        'size': size.toString(),
+      },
+      fromItem: (data) => Post.fromJson(data as Map<String, dynamic>),
+    );
+    switch (result) {
+      case Ok<PageResult<Post>>():
+        return Result.ok(result.value.content);
+      case Error<PageResult<Post>>():
+        return Result.error(result.error);
+    }
+  }
+
+  @override
   Future<Result<Post>> createPost({
     required String content,
     List<String>? images,

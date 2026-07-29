@@ -75,6 +75,121 @@ class _UserPostsTabState extends State<UserPostsTab> {
   }
 }
 
+/// Tab content: list of posts liked by current user.
+class UserLikedPostsTab extends StatefulWidget {
+  final bool isMe;
+  const UserLikedPostsTab({super.key, this.isMe = false});
+  @override
+  State<UserLikedPostsTab> createState() => _UserLikedPostsTabState();
+}
+
+class _UserLikedPostsTabState extends State<UserLikedPostsTab> {
+  late Future<Result<List<Post>>> _postsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPosts();
+  }
+
+  void _loadPosts() {
+    _postsFuture = context.read<PostRepository>().getLikedPosts();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _PostListBody(
+      future: _postsFuture,
+      isMe: widget.isMe,
+      onRefresh: () => setState(_loadPosts),
+    );
+  }
+}
+
+/// Tab content: list of posts collected by current user.
+class UserCollectedPostsTab extends StatefulWidget {
+  final bool isMe;
+  const UserCollectedPostsTab({super.key, this.isMe = false});
+  @override
+  State<UserCollectedPostsTab> createState() => _UserCollectedPostsTabState();
+}
+
+class _UserCollectedPostsTabState extends State<UserCollectedPostsTab> {
+  late Future<Result<List<Post>>> _postsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPosts();
+  }
+
+  void _loadPosts() {
+    _postsFuture = context.read<PostRepository>().getCollectedPosts();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _PostListBody(
+      future: _postsFuture,
+      isMe: widget.isMe,
+      onRefresh: () => setState(_loadPosts),
+    );
+  }
+}
+
+/// Shared body for liked / collected post tabs.
+class _PostListBody extends StatelessWidget {
+  final Future<Result<List<Post>>> future;
+  final bool isMe;
+  final VoidCallback onRefresh;
+
+  const _PostListBody({
+    required this.future,
+    required this.isMe,
+    required this.onRefresh,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<Result<List<Post>>>(
+      future: future,
+      builder: (_, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        return switch (snapshot.data!) {
+          Ok<List<Post>>(:final value) => value.isEmpty
+              ? const Center(child: Text('暂无内容'))
+              : Padding(
+                  padding: const EdgeInsets.only(top: 80),
+                  child: PostFeed(posts: value, isMe: isMe),
+                ),
+          Error<List<Post>>(:final error) => Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text('加载失败',
+                      style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 8),
+                  Text(error.toString(),
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodySmall),
+                  const SizedBox(height: 16),
+                  FilledButton.tonal(
+                    onPressed: onRefresh,
+                    child: const Text('重试'),
+                  ),
+                ],
+              ),
+            ),
+        };
+      },
+    );
+  }
+}
+
 /// Sticky TabBar delegate for the pinned tab bar.
 class UserTabBarDelegate extends SliverPersistentHeaderDelegate {
   final ColorScheme cs;

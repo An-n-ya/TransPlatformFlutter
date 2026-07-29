@@ -18,6 +18,12 @@ abstract class PostRepository {
   Future<Result<List<Post>>> getUserPosts(int userId,
       {int page = 0, int size = 20});
 
+  /// Get posts liked by current user (paginated).
+  Future<Result<List<Post>>> getLikedPosts({int page = 0, int size = 20});
+
+  /// Get posts collected by current user (paginated).
+  Future<Result<List<Post>>> getCollectedPosts({int page = 0, int size = 20});
+
   /// Create a new post.
   Future<Result<Post>> createPost({
     required String content,

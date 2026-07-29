@@ -46,22 +46,11 @@ class UserDetailPage extends StatelessWidget {
           body: TabBarView(
             children: [
               UserPostsTab(userId: user.id, isMe: isMe),
-              _buildPlaceholder(context),
-              _buildPlaceholder(context),
+              UserLikedPostsTab(isMe: isMe),
+              UserCollectedPostsTab(isMe: isMe),
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildPlaceholder(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Container(
-      color: cs.surfaceDim,
-      child: const SafeArea(
-        top: false,
-        child: Center(child: Text('Coming soon')),
       ),
     );
   }

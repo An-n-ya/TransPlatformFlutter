@@ -33,6 +33,18 @@ class PostRepositoryLocal implements PostRepository {
   }
 
   @override
+  Future<Result<List<Post>>> getLikedPosts({int page = 0, int size = 20}) async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    return Result.ok(_samplePosts.take(2).toList());
+  }
+
+  @override
+  Future<Result<List<Post>>> getCollectedPosts({int page = 0, int size = 20}) async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    return Result.ok(_samplePosts.take(1).toList());
+  }
+
+  @override
   Future<Result<Post>> createPost({
     required String content,
     List<String>? images,
