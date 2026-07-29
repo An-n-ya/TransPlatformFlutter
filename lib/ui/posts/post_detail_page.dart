@@ -1,20 +1,125 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
+import '../../data/repositories/post/post_repository.dart';
+import '../../data/repositories/user/user_repository.dart';
 import '../../domain/models/comment.dart';
 import '../../domain/models/post.dart';
 import '../../domain/models/user.dart';
+import '../../utils/result.dart';
 import 'photo_grid.dart';
 
-/// Post detail page.
-///
-/// Shows a single post expanded with full content, image grid,
-/// interaction counts, and a scrollable list of comments.
-/// Backend integration is intentionally left out for now.
-class PostDetailPage extends StatelessWidget {
+/// Post detail page with comments and comment input.
+class PostDetailPage extends StatefulWidget {
   final Post post;
 
   const PostDetailPage({super.key, required this.post});
+
+  @override
+  State<PostDetailPage> createState() => _PostDetailPageState();
+}
+
+class _PostDetailPageState extends State<PostDetailPage> {
+  final _commentController = TextEditingController();
+  final _focusNode = FocusNode();
+  late Future<Result<List<Comment>>> _commentsFuture;
+  // TODO: use a state management solution like Provider to manage the current user's ID.
+  int? _currentUserId;
+  bool _isFocused = false;
+  bool _isSending = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _commentsFuture = _loadComments();
+    _loadCurrentUser();
+    _focusNode.addListener(() => setState(() => _isFocused = _focusNode.hasFocus));
+  }
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadCurrentUser() async {
+    final result = await context.read<UserRepository>().getCurrentUser();
+    if (!mounted) return;
+    if (result is Ok<User>) {
+      setState(() => _currentUserId = result.value.id);
+    }
+  }
+
+  Future<Result<List<Comment>>> _loadComments() =>
+      context.read<PostRepository>().getPostComments(widget.post.id);
+
+  Future<void> _sendComment() async {
+    final content = _commentController.text.trim();
+    if (content.isEmpty) return;
+
+    setState(() => _isSending = true);
+
+    final result = await context
+        .read<PostRepository>()
+        .createComment(widget.post.id, content: content);
+
+    if (!mounted) return;
+
+    switch (result) {
+      case Ok<Comment>():
+        _commentController.clear();
+        setState(() {
+          _isSending = false;
+          _commentsFuture = _loadComments();
+        });
+      case Error<Comment>():
+        setState(() => _isSending = false);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('评论发送失败')),
+          );
+        }
+    }
+  }
+
+  void _reloadComments() {
+    _commentsFuture = _loadComments();
+    setState(() {});
+  }
+
+  Future<void> _deleteComment(int commentId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('删除评论'),
+        content: const Text('确定要删除这条评论吗？'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('删除', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    final result = await context.read<PostRepository>().deleteComment(commentId);
+    if (!mounted) return;
+
+    switch (result) {
+      case Ok<void>():{
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('评论已删除')));
+        _reloadComments();
+      }
+      case Error<void>():{
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('删除失败')));
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,44 +145,71 @@ class PostDetailPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _PostHeader(post: post),
-                  if (post.content.isNotEmpty)
+                  _PostHeader(post: widget.post),
+                  if (widget.post.content.isNotEmpty)
                     Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      child: Text(post.content),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: Text(widget.post.content),
                     ),
-                  if (post.images.isNotEmpty)
+                  if (widget.post.images.isNotEmpty)
                     Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      child: PhotoGrid(images: post.images),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: PhotoGrid(images: widget.post.images),
                     ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _InteractionBar(post: post),
+                    child: _InteractionBar(post: widget.post),
                   ),
                   const Divider(height: 24),
-                  _CommentList(comments: _mockComments),
+                  _buildCommentsSection(),
                 ],
               ),
             ),
           ),
-          const _CommentInput(),
+          _CommentInput(
+            controller: _commentController,
+            focusNode: _focusNode,
+            isFocused: _isFocused,
+            isSending: _isSending,
+            onSend: _sendComment,
+          ),
         ],
       ),
     );
   }
+
+  Widget _buildCommentsSection() {
+    return FutureBuilder<Result<List<Comment>>>(
+      future: _commentsFuture,
+      builder: (_, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        return switch (snapshot.data!) {
+          Ok<List<Comment>>(:final value) => value.isEmpty
+              ? const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 12),
+                  child: Text('暂无评论'),
+                )
+              : _CommentList(
+                    comments: value,
+                    currentUserId: _currentUserId,
+                    onDeleteRequested: (id) => _deleteComment(id),
+                  ),
+          Error<List<Comment>>() => const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 12),
+              child: Text('加载评论失败'),
+            ),
+        };
+      },
+    );
+  }
 }
 
-/// Post header with avatar, name, follow button, and timestamp.
+// ── Post header ──
+
 class _PostHeader extends StatelessWidget {
   final Post post;
-
   const _PostHeader({required this.post});
 
   @override
@@ -97,11 +229,7 @@ class _PostHeader extends StatelessWidget {
               post.author.nickname.isNotEmpty
                   ? post.author.nickname[0].toUpperCase()
                   : '?',
-              style: TextStyle(
-                color: cs.onPrimaryContainer,
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
+              style: TextStyle(color: cs.onPrimaryContainer, fontSize: 16, fontWeight: FontWeight.w500),
             ),
           ),
           const SizedBox(width: 16),
@@ -109,19 +237,9 @@ class _PostHeader extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  post.author.nickname,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
+                Text(post.author.nickname, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w500)),
                 const SizedBox(height: 2),
-                Text(
-                  _formatMeta(post),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: cs.onSurfaceVariant,
-                  ),
-                ),
+                Text(_formatMeta(post), style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
               ],
             ),
           ),
@@ -131,9 +249,7 @@ class _PostHeader extends StatelessWidget {
             label: const Text('Follow'),
             style: FilledButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(100),
-              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
             ),
           ),
         ],
@@ -142,26 +258,21 @@ class _PostHeader extends StatelessWidget {
   }
 
   String _formatMeta(Post post) {
-    final parts = <String>[
-      DateFormat('yyyy-MM-dd HH:mm').format(post.createdAt),
-    ];
-    if (post.location != null && post.location!.isNotEmpty) {
-      parts.add(post.location!);
-    }
+    final parts = <String>[DateFormat('yyyy-MM-dd HH:mm').format(post.createdAt)];
+    if (post.location != null && post.location!.isNotEmpty) parts.add(post.location!);
     return parts.join(' · ');
   }
 }
 
-/// Like / comment counts bar.
+// ── Interaction counts ──
+
 class _InteractionBar extends StatelessWidget {
   final Post post;
-
   const _InteractionBar({required this.post});
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-
     return Row(
       children: [
         Icon(Icons.favorite_border, size: 18, color: cs.onSurface),
@@ -176,11 +287,18 @@ class _InteractionBar extends StatelessWidget {
   }
 }
 
-/// Scrollable list of comments.
+// ── Comment list ──
+
 class _CommentList extends StatelessWidget {
   final List<Comment> comments;
+  final int? currentUserId;
+  final ValueChanged<int>? onDeleteRequested;
 
-  const _CommentList({required this.comments});
+  const _CommentList({
+    required this.comments,
+    this.currentUserId,
+    this.onDeleteRequested,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -190,16 +308,25 @@ class _CommentList extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12),
       itemCount: comments.length,
       separatorBuilder: (_, _) => const SizedBox(height: 16),
-      itemBuilder: (_, i) => _CommentTile(comment: comments[i]),
+      itemBuilder: (_, i) => _CommentTile(
+        comment: comments[i],
+        isMe: currentUserId != null && comments[i].author.id == currentUserId,
+        onDelete: () => onDeleteRequested?.call(comments[i].id),
+      ),
     );
   }
 }
 
-/// Single comment row.
 class _CommentTile extends StatelessWidget {
   final Comment comment;
+  final bool isMe;
+  final VoidCallback? onDelete;
 
-  const _CommentTile({required this.comment});
+  const _CommentTile({
+    required this.comment,
+    this.isMe = false,
+    this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -216,11 +343,7 @@ class _CommentTile extends StatelessWidget {
             comment.author.nickname.isNotEmpty
                 ? comment.author.nickname[0].toUpperCase()
                 : '?',
-            style: TextStyle(
-              color: cs.onPrimaryContainer,
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-            ),
+            style: TextStyle(color: cs.onPrimaryContainer, fontSize: 16, fontWeight: FontWeight.w500),
           ),
         ),
         const SizedBox(width: 16),
@@ -231,41 +354,45 @@ class _CommentTile extends StatelessWidget {
               Row(
                 children: [
                   Expanded(
-                    child: Text(
-                      comment.author.nickname,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
+                    child: Text(comment.author.nickname,
+                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w500)),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.more_vert, size: 20),
-                    onPressed: () {},
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
+
+                  if (isMe)
+                    PopupMenuButton<String>(
+                      icon: const Icon(Icons.more_vert, size: 20),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      onSelected: (value) {
+                        if (value == 'delete') onDelete?.call();
+                      },
+                      itemBuilder: (_) => [
+                        const PopupMenuItem(
+                          value: 'delete',
+                          child: Row(
+                            children: [
+                              Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                              SizedBox(width: 8),
+                              Text('删除', style: TextStyle(color: Colors.red)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    )
+                  else
+                    const SizedBox(width: 48),
                 ],
               ),
-              Text(
-                DateFormat('yyyy-MM-dd HH:mm').format(comment.createdAt),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: cs.onSurfaceVariant,
-                ),
-              ),
+              Text(DateFormat('yyyy-MM-dd HH:mm').format(comment.createdAt),
+                  style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
               const SizedBox(height: 4),
               Text(comment.content),
               const SizedBox(height: 8),
               Row(
                 children: [
-                  Icon(Icons.favorite_border,
-                      size: 18, color: cs.onSurface),
+                  Icon(Icons.favorite_border, size: 18, color: cs.onSurface),
                   const SizedBox(width: 4),
                   Text('${comment.likesCount}'),
-                  const SizedBox(width: 16),
-                  Icon(Icons.mode_comment_outlined,
-                      size: 18, color: cs.onSurface),
-                  const SizedBox(width: 4),
-                  Text('${comment.replies.length}'),
                 ],
               ),
             ],
@@ -276,34 +403,22 @@ class _CommentTile extends StatelessWidget {
   }
 }
 
-/// Sticky comment input at the bottom.
-class _CommentInput extends StatefulWidget {
-  const _CommentInput();
+// ── Comment input ──
 
-  @override
-  State<_CommentInput> createState() => _CommentInputState();
-}
+class _CommentInput extends StatelessWidget {
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final bool isFocused;
+  final bool isSending;
+  final VoidCallback onSend;
 
-class _CommentInputState extends State<_CommentInput> {
-  final _focusNode = FocusNode();
-  bool _isFocused = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _focusNode.addListener(_onFocusChanged);
-  }
-
-  @override
-  void dispose() {
-    _focusNode.removeListener(_onFocusChanged);
-    _focusNode.dispose();
-    super.dispose();
-  }
-
-  void _onFocusChanged() {
-    setState(() => _isFocused = _focusNode.hasFocus);
-  }
+  const _CommentInput({
+    required this.controller,
+    required this.focusNode,
+    required this.isFocused,
+    required this.isSending,
+    required this.onSend,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -319,7 +434,7 @@ class _CommentInputState extends State<_CommentInput> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeInOut,
-          height: _isFocused ? 120 : 40,
+          height: isFocused ? 120 : 40,
           decoration: BoxDecoration(
             color: cs.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(24),
@@ -330,7 +445,8 @@ class _CommentInputState extends State<_CommentInput> {
             children: [
               Expanded(
                 child: TextField(
-                  focusNode: _focusNode,
+                  controller: controller,
+                  focusNode: focusNode,
                   maxLines: null,
                   expands: true,
                   textAlignVertical: TextAlignVertical.top,
@@ -342,23 +458,24 @@ class _CommentInputState extends State<_CommentInput> {
                   ),
                 ),
               ),
-              if (_isFocused)
+              if (isFocused)
                 Padding(
                   padding: const EdgeInsets.only(left: 4, bottom: 4),
-                  child: FilledButton.icon(
-                    onPressed: () {},
-                    icon: const Icon(Icons.upload_outlined, size: 18),
-                    label: const Text('发送'),
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(100),
-                      ),
-                    ),
-                  ),
+                  child: isSending
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : FilledButton.icon(
+                          onPressed: onSend,
+                          icon: const Icon(Icons.upload_outlined, size: 18),
+                          label: const Text('发送'),
+                          style: FilledButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+                          ),
+                        ),
                 ),
             ],
           ),
@@ -367,24 +484,3 @@ class _CommentInputState extends State<_CommentInput> {
     );
   }
 }
-
-final _mockComments = [
-  Comment(
-    id: 1,
-    postId: 1,
-    author: const User(id: 2, username: 'alice', nickname: 'Alice'),
-    content:
-        'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec egestas viverra tortor, vel pretium sapien mollis nec. Aliquam ac faucibus eros. Interdum et malesuada fames ac ante ipsum primis in faucibus.',
-    likesCount: 100,
-    createdAt: DateTime(2024, 6, 15, 10, 30),
-  ),
-  Comment(
-    id: 2,
-    postId: 1,
-    author: const User(id: 3, username: 'alice', nickname: 'Alice'),
-    content:
-        'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec egestas viverra tortor, vel pretium sapien mollis nec. Aliquam ac faucibus eros. Interdum et malesuada fames ac ante ipsum primis in faucibus.',
-    likesCount: 100,
-    createdAt: DateTime(2024, 6, 15, 11, 0),
-  ),
-];
