@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../settings/settings_page.dart';
+import '../posts/add_post_page.dart';
 import '../posts/posts_page.dart';
 
 /// "首页" tab — a page with its own sub-tab bar (广场/附近/医疗/生活).
@@ -9,6 +10,9 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return DefaultTabController(
       length: 4,
       child: Scaffold(
@@ -26,15 +30,12 @@ class HomePage extends StatelessWidget {
             onPressed: () {},
           ),
           actions: <Widget>[
-            IconButton(
-              icon: const Icon(Icons.notifications),
-              onPressed: () {},
-            ),
+            IconButton(icon: const Icon(Icons.notifications), onPressed: () {}),
             IconButton(
               icon: const Icon(Icons.settings),
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const SettingsPage()),
-              ),
+              onPressed: () => Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const SettingsPage())),
             ),
           ],
           title: const Text('TransPlatform'),
@@ -46,6 +47,13 @@ class HomePage extends StatelessWidget {
             Icon(Icons.directions_bike),
             Icon(Icons.directions_bike),
           ],
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () => Navigator.of(
+            context,
+          ).push(MaterialPageRoute(builder: (_) => const AddPostPage())),
+          backgroundColor: colorScheme.primary,
+          child: const Icon(Icons.add, color: Colors.white),
         ),
       ),
     );
