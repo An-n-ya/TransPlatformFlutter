@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../../data/repositories/post/post_repository.dart';
+import '../../domain/models/post.dart';
+import '../../utils/result.dart';
 
 /// Create new post page.
-///
-/// Allows entering text, attaching photos, mentioning users,
-/// adding topics, setting visibility, and marking a location.
-/// Backend integration is intentionally left out for now.
 class AddPostPage extends StatefulWidget {
   const AddPostPage({super.key});
 
@@ -14,11 +15,51 @@ class AddPostPage extends StatefulWidget {
 
 class _AddPostPageState extends State<AddPostPage> {
   final _textController = TextEditingController();
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
     _textController.dispose();
     super.dispose();
+  }
+
+  Future<void> _submitPost() async {
+    final content = _textController.text.trim();
+    if (content.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('请输入内容')),
+      );
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+
+    final result = await context.read<PostRepository>().createPost(
+          content: content,
+        );
+
+    if (!mounted) return;
+
+    switch (result) {
+      case Ok<Post>():{
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('发布成功')),
+        );
+        Navigator.of(context).pop();
+      }
+      case Error<Post>():{
+        setState(() => _isSubmitting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('发布失败: ${_extractError(result.error)}')),
+        );
+      }
+    }
+  }
+
+  String _extractError(Exception e) {
+    final s = e.toString();
+    final idx = s.indexOf('): ');
+    return idx != -1 ? s.substring(idx + 3) : s;
   }
 
   @override
@@ -29,14 +70,23 @@ class _AddPostPageState extends State<AddPostPage> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(),
         ),
         title: const Text('新建贴文'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.upload_outlined),
-            onPressed: () {},
-          ),
+          _isSubmitting
+              ? const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                )
+              : IconButton(
+                  icon: const Icon(Icons.upload_outlined),
+                  onPressed: _submitPost,
+                ),
         ],
       ),
       body: Column(
@@ -55,6 +105,7 @@ class _AddPostPageState extends State<AddPostPage> {
                 maxLines: null,
                 keyboardType: TextInputType.multiline,
                 textCapitalization: TextCapitalization.sentences,
+                enabled: !_isSubmitting,
               ),
             ),
           ),

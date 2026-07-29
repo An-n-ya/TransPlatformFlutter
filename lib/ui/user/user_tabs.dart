@@ -9,8 +9,9 @@ import '../posts/post_card.dart';
 /// Tab content: list of posts by this user.
 class UserPostsTab extends StatefulWidget {
   final int userId;
+  final bool isMe;
 
-  const UserPostsTab({super.key, required this.userId});
+  const UserPostsTab({super.key, required this.userId, this.isMe = false});
 
   @override
   State<UserPostsTab> createState() => _UserPostsTabState();
@@ -42,7 +43,11 @@ class _UserPostsTabState extends State<UserPostsTab> {
               ? const Center(child: Text('暂无贴文'))
               : Padding(
                   padding: const EdgeInsets.only(top: 80),
-                  child: PostFeed(posts: value),
+                  child: PostFeed(
+                    posts: value,
+                    isMe: widget.isMe,
+                    onPostDeleted: () => setState(_loadPosts),
+                  ),
                 ),
           Error<List<Post>>(:final error) => Center(
               child: Column(

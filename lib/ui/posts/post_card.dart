@@ -1,22 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
+import '../../data/repositories/post/post_repository.dart';
 import '../../domain/models/post.dart';
+import '../../utils/result.dart';
 import '../user/user_detail_page.dart';
 import 'photo_grid.dart';
 
 /// A feed-style list of [PostCard]s.
 class PostFeed extends StatelessWidget {
   final List<Post> posts;
+  final bool isMe;
+  final VoidCallback? onPostDeleted;
 
-  const PostFeed({super.key, required this.posts});
+  const PostFeed({
+    super.key,
+    required this.posts,
+    this.isMe = false,
+    this.onPostDeleted,
+  });
 
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
       padding: const EdgeInsets.all(8),
       itemCount: posts.length,
-      itemBuilder: (_, i) => PostCard(post: posts[i]),
+      itemBuilder: (_, i) => PostCard(
+        post: posts[i],
+        isMe: isMe,
+        onPostDeleted: onPostDeleted,
+      ),
     );
   }
 }
@@ -24,8 +38,15 @@ class PostFeed extends StatelessWidget {
 /// A single post card — avatar, content, images, action buttons.
 class PostCard extends StatelessWidget {
   final Post post;
+  final bool isMe;
+  final VoidCallback? onPostDeleted;
 
-  const PostCard({super.key, required this.post});
+  const PostCard({
+    super.key,
+    required this.post,
+    this.isMe = false,
+    this.onPostDeleted,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -39,12 +60,21 @@ class PostCard extends StatelessWidget {
         children: [
           // ── Header ──
           ListTile(
-            leading: ClipOval(child: _buildAvatar(context)),
-            title: Text(post.author.nickname),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => UserDetailPage(user: post.author),
+            leading: GestureDetector(
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => UserDetailPage(user: post.author),
+                ),
               ),
+              child: ClipOval(child: _buildAvatar(context)),
+            ),
+            title: GestureDetector(
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => UserDetailPage(user: post.author),
+                ),
+              ),
+              child: Text(post.author.nickname),
             ),
             subtitle: Row(
               children: [
@@ -58,7 +88,27 @@ class PostCard extends StatelessWidget {
                 ],
               ],
             ),
-            trailing: const Icon(Icons.more_horiz),
+            trailing: isMe
+                ? PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_horiz),
+                    onSelected: (value) {
+                      if (value == 'delete') _deletePost(context);
+                    },
+                    itemBuilder: (_) => [
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete_outline,
+                                size: 20, color: Colors.red),
+                            SizedBox(width: 8),
+                            Text('删除', style: TextStyle(color: Colors.red)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  )
+                : const Icon(Icons.more_horiz),
           ),
 
           // ── Content ──
@@ -122,6 +172,46 @@ class PostCard extends StatelessWidget {
     }
     return Image.asset(url, width: 40, height: 40, fit: BoxFit.cover,
         errorBuilder: (_, _, _) => fallback);
+  }
+
+  Future<void> _deletePost(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('删除贴文'),
+        content: const Text('确定要删除这条贴文吗？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('删除',
+                style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    final result = await context.read<PostRepository>().deletePost(post.id);
+    if (!context.mounted) return;
+
+    switch (result) {
+      case Ok<void>():{
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('已删除')),
+        );
+        onPostDeleted?.call();
+      }
+      case Error<void>():{
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('删除失败')),
+        );
+      }
+    }
   }
 }
 
