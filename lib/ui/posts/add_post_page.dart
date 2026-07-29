@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/repositories/post/post_repository.dart';
@@ -15,6 +18,8 @@ class AddPostPage extends StatefulWidget {
 
 class _AddPostPageState extends State<AddPostPage> {
   final _textController = TextEditingController();
+  final _picker = ImagePicker();
+  final List<XFile> _selectedImages = [];
   bool _isSubmitting = false;
 
   @override
@@ -23,11 +28,25 @@ class _AddPostPageState extends State<AddPostPage> {
     super.dispose();
   }
 
+  Future<void> _pickImages() async {
+    final images = await _picker.pickMultiImage(
+      imageQuality: 85,
+      limit: 9,
+    );
+    if (images.isNotEmpty) {
+      setState(() => _selectedImages.addAll(images));
+    }
+  }
+
+  void _removeImage(int index) {
+    setState(() => _selectedImages.removeAt(index));
+  }
+
   Future<void> _submitPost() async {
     final content = _textController.text.trim();
-    if (content.isEmpty) {
+    if (content.isEmpty && _selectedImages.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('请输入内容')),
+        const SnackBar(content: Text('请输入内容或选择图片')),
       );
       return;
     }
@@ -36,23 +55,27 @@ class _AddPostPageState extends State<AddPostPage> {
 
     final result = await context.read<PostRepository>().createPost(
           content: content,
+          images:
+              _selectedImages.isNotEmpty
+                  ? _selectedImages.map((f) => f.path).toList()
+                  : null,
         );
 
     if (!mounted) return;
 
     switch (result) {
-      case Ok<Post>():{
+      case Ok<Post>():
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('发布成功')),
         );
         Navigator.of(context).pop();
-      }
-      case Error<Post>():{
+      case Error<Post>():
         setState(() => _isSubmitting = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('发布失败: ${_extractError(result.error)}')),
+          SnackBar(
+            content: Text('发布失败: ${_extractError(result.error)}'),
+          ),
         );
-      }
     }
   }
 
@@ -70,7 +93,8 @@ class _AddPostPageState extends State<AddPostPage> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(),
+          onPressed:
+              _isSubmitting ? null : () => Navigator.of(context).pop(),
         ),
         title: const Text('新建贴文'),
         actions: [
@@ -92,9 +116,13 @@ class _AddPostPageState extends State<AddPostPage> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ── Text input ──
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 10,
+              ),
               child: TextField(
                 controller: _textController,
                 decoration: const InputDecoration(
@@ -109,6 +137,8 @@ class _AddPostPageState extends State<AddPostPage> {
               ),
             ),
           ),
+
+          // ── User / Topic chips ──
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             child: Wrap(
@@ -127,48 +157,95 @@ class _AddPostPageState extends State<AddPostPage> {
               ],
             ),
           ),
+
           Divider(color: cs.outline),
+
+          // ── Image preview row ──
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: Row(
-              children: [
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    color: cs.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.asset(
-                      'assets/images/image.png',
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                _AddPhotoButton(onTap: () {}),
-              ],
+            child: SizedBox(
+              height: 80,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: _selectedImages.length + 1,
+                separatorBuilder: (_, _) => const SizedBox(width: 10),
+                itemBuilder: (context, index) {
+                  if (index == _selectedImages.length) {
+                    return _AddPhotoButton(onTap: _pickImages);
+                  }
+                  return _ImagePreview(
+                    file: _selectedImages[index],
+                    onDelete: () => _removeImage(index),
+                  );
+                },
+              ),
             ),
           ),
+
           const Divider(height: 1),
-          _ListTileButton(
-            label: '公开可见',
-            onTap: () {},
-          ),
+
+          // ── Visibility ──
+          _ListTileButton(label: '公开可见', onTap: () {}),
+
           const Divider(height: 1),
-          _ListTileButton(
-            label: '标记位置',
-            onTap: () {},
-          ),
+
+          // ── Location ──
+          _ListTileButton(label: '标记位置', onTap: () {}),
         ],
       ),
     );
   }
 }
 
-/// Outlined chip with leading icon used for user/topic mentions.
+// ── Image preview widget ──
+
+class _ImagePreview extends StatelessWidget {
+  final XFile file;
+  final VoidCallback onDelete;
+
+  const _ImagePreview({required this.file, required this.onDelete});
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.file(
+            File(file.path),
+            width: 80,
+            height: 80,
+            fit: BoxFit.cover,
+            errorBuilder: (_, _, _) => Container(
+              width: 80,
+              height: 80,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              child: const Icon(Icons.broken_image),
+            ),
+          ),
+        ),
+        Positioned(
+          top: -4,
+          right: -4,
+          child: GestureDetector(
+            onTap: onDelete,
+            child: Container(
+              padding: const EdgeInsets.all(2),
+              decoration: const BoxDecoration(
+                color: Colors.black54,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.close, size: 16, color: Colors.white),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Shared widgets ──
+
 class _OutlinedChip extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -183,7 +260,6 @@ class _OutlinedChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-
     return OutlinedButton.icon(
       onPressed: onTap,
       icon: Icon(icon, size: 18),
@@ -198,7 +274,6 @@ class _OutlinedChip extends StatelessWidget {
   }
 }
 
-/// Square button used to add more photos.
 class _AddPhotoButton extends StatelessWidget {
   final VoidCallback onTap;
 
@@ -207,7 +282,6 @@ class _AddPhotoButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
@@ -224,15 +298,11 @@ class _AddPhotoButton extends StatelessWidget {
   }
 }
 
-/// Tappable list row for visibility and location options.
 class _ListTileButton extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
 
-  const _ListTileButton({
-    required this.label,
-    required this.onTap,
-  });
+  const _ListTileButton({required this.label, required this.onTap});
 
   @override
   Widget build(BuildContext context) {

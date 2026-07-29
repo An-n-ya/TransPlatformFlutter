@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/repositories/user/user_repository.dart';
@@ -18,8 +21,10 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
+  final _picker = ImagePicker();
   late TextEditingController _nicknameController;
   late TextEditingController _bioController;
+  XFile? _pickedAvatar;
   bool _isSaving = false;
   String? _errorMessage;
 
@@ -39,6 +44,16 @@ class _ProfilePageState extends State<ProfilePage> {
     super.dispose();
   }
 
+  Future<void> _pickAvatar() async {
+    final image = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+      maxWidth: 512,
+      maxHeight: 512,
+    );
+    if (image != null) setState(() => _pickedAvatar = image);
+  }
+
   Future<void> _save() async {
     final nickname = _nicknameController.text.trim();
     final bio = _bioController.text.trim();
@@ -55,6 +70,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
     final result = await context.read<UserRepository>().updateUser(
           nickname: nickname,
+          avatar: _pickedAvatar?.path,
           bio: bio.isNotEmpty ? bio : null,
         );
 
@@ -102,31 +118,31 @@ class _ProfilePageState extends State<ProfilePage> {
         children: [
           // Avatar
           Center(
-            child: Stack(
-              children: [
-                ClipOval(
-                  child: SizedBox.fromSize(
-                    size: const Size(80, 80),
-                    child: widget.existingUser?.avatar != null
-                        ? _buildAvatar(widget.existingUser!.avatar!)
-                        : Icon(Icons.person, size: 48,
-                            color: theme.colorScheme.primary),
-                  ),
-                ),
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primary,
-                      shape: BoxShape.circle,
+            child: GestureDetector(
+              onTap: _pickAvatar,
+              child: Stack(
+                children: [
+                  ClipOval(
+                    child: SizedBox.fromSize(
+                      size: const Size(80, 80),
+                      child: _buildAvatarWidget(),
                     ),
-                    child: const Icon(Icons.camera_alt,
-                        size: 18, color: Colors.white),
                   ),
-                ),
-              ],
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primary,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.camera_alt,
+                          size: 18, color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 32),
@@ -164,12 +180,27 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildAvatar(String url) {
-    if (url.startsWith('http')) {
-      return Image.network(url, fit: BoxFit.cover,
+  Widget _buildAvatarWidget() {
+    final theme = Theme.of(context);
+    // Picked image takes priority
+    if (_pickedAvatar != null) {
+      return Image.file(
+        File(_pickedAvatar!.path),
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) =>
+            Icon(Icons.person, size: 48, color: theme.colorScheme.primary),
+      );
+    }
+    // Existing avatar from user data
+    final url = widget.existingUser?.avatar;
+    if (url != null && url.isNotEmpty) {
+      if (url.startsWith('http')) {
+        return Image.network(url, fit: BoxFit.cover,
+            errorBuilder: (_, _, _) => const Icon(Icons.person));
+      }
+      return Image.asset(url, fit: BoxFit.cover,
           errorBuilder: (_, _, _) => const Icon(Icons.person));
     }
-    return Image.asset(url, fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => const Icon(Icons.person));
+    return Icon(Icons.person, size: 48, color: theme.colorScheme.primary);
   }
 }

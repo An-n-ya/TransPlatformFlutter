@@ -47,6 +47,9 @@ dependencies:
   # Secure token storage
   flutter_secure_storage: ^9.2.4
 
+  # Image picker
+  image_picker: ^1.1.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
