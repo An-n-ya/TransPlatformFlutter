@@ -64,13 +64,13 @@ class PostRepositoryRemote implements PostRepository {
     List<String>? images,
     String? location,
   }) async {
-    return _api.post<Post>(
+    final fields = <String, String>{'content': content};
+    if (location != null) fields['location'] = location;
+
+    return _api.postMultipart<Post>(
       '/api/v1/posts',
-      body: {
-        'content': content,
-        if (images != null) 'images': images,
-        if (location != null) 'location': location,
-      },
+      fields: fields,
+      imagePaths: images,
       fromData: (data) => Post.fromJson(data as Map<String, dynamic>),
     );
   }

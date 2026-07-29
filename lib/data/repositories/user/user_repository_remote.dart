@@ -32,13 +32,14 @@ class UserRepositoryRemote implements UserRepository {
     String? avatar,
     String? bio,
   }) async {
-    return _api.put<User>(
+    final fields = <String, String>{};
+    if (nickname != null) fields['nickname'] = nickname;
+    if (bio != null) fields['bio'] = bio;
+
+    return _api.putMultipart<User>(
       '/api/v1/users/me',
-      body: {
-        if (nickname != null) 'nickname': nickname,
-        if (avatar != null) 'avatar': avatar,
-        if (bio != null) 'bio': bio,
-      },
+      fields: fields,
+      avatarPath: avatar,
       fromData: (data) => User.fromJson(data as Map<String, dynamic>),
     );
   }

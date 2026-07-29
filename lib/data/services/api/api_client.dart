@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 
 import '../../../utils/result.dart';
 import 'api_response.dart';
@@ -94,6 +96,72 @@ class ApiClient {
     );
   }
 
+  /// POST request with multipart/form-data (for file uploads).
+  Future<Result<T>> postMultipart<T>(
+    String path, {
+    Map<String, String>? fields,
+    List<String>? imagePaths,
+    T Function(dynamic)? fromData,
+  }) async {
+    return _request(() => _sendMultipart('POST', path, fields: fields, imagePaths: imagePaths), fromData);
+  }
+
+  /// PUT request with multipart/form-data.
+  Future<Result<T>> putMultipart<T>(
+    String path, {
+    Map<String, String>? fields,
+    String? avatarPath,
+    T Function(dynamic)? fromData,
+  }) async {
+    return _request(() => _sendMultipart('PUT', path, fields: fields, avatarPath: avatarPath), fromData);
+  }
+
+  /// Shared multipart request sender.
+  Future<http.Response> _sendMultipart(
+    String method,
+    String path, {
+    Map<String, String>? fields,
+    List<String>? imagePaths,
+    String? avatarPath,
+  }) async {
+    final request = http.MultipartRequest(method, Uri.parse('$baseUrl$path'));
+
+    if (_accessToken != null) {
+      request.headers['Authorization'] = 'Bearer $_accessToken';
+    }
+
+    if (fields != null) request.fields.addAll(fields);
+
+    // Multiple images (for createPost)
+    if (imagePaths != null) {
+      for (final p in imagePaths) {
+        final file = File(p);
+        final bytes = await file.readAsBytes();
+        request.files.add(http.MultipartFile.fromBytes(
+          'images',
+          bytes,
+          filename: p.split('/').last,
+          contentType: _mediaTypeFromPath(p),
+        ));
+      }
+    }
+
+    // Single avatar file (for updateUser)
+    if (avatarPath != null) {
+      final file = File(avatarPath);
+      final bytes = await file.readAsBytes();
+      request.files.add(http.MultipartFile.fromBytes(
+        'avatar',
+        bytes,
+        filename: avatarPath.split('/').last,
+        contentType: _mediaTypeFromPath(avatarPath),
+      ));
+    }
+
+    final streamed = await request.send().timeout(_timeout);
+    return http.Response.fromStream(streamed);
+  }
+
   /// PUT request with JSON body.
   Future<Result<T>> put<T>(
     String path, {
@@ -143,6 +211,20 @@ class ApiClient {
       return uri.replace(queryParameters: queryParams);
     }
     return uri;
+  }
+
+  /// Map a file path to its [MediaType] based on extension.
+  MediaType _mediaTypeFromPath(String path) {
+    final ext = path.split('.').last.toLowerCase();
+    final type = switch (ext) {
+      'jpg' || 'jpeg' => 'jpeg',
+      'png' => 'png',
+      'gif' => 'gif',
+      'webp' => 'webp',
+      'bmp' => 'bmp',
+      _ => 'jpeg',
+    };
+    return MediaType('image', type);
   }
 
   /// Core request handler.
