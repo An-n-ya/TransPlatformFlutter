@@ -1,5 +1,7 @@
 import 'user.dart';
 
+import '../../utils/image_url.dart';
+
 /// Post view object matching backend [PostVO].
 ///
 /// ```json
@@ -50,7 +52,7 @@ class Post {
       author: User.fromJson(json['author'] as Map<String, dynamic>),
       content: json['content'] as String? ?? '',
       images: (json['images'] as List<dynamic>?)
-              ?.map((e) => e as String)
+              ?.map((e) => resolveImageUrl(e as String))
               .toList() ??
           [],
       location: json['location'] as String?,

@@ -1,19 +1,6 @@
+import '../../utils/image_url.dart';
+
 /// User view object matching backend [UserVO].
-///
-/// ```json
-/// {
-///   "id": 1,
-///   "username": "alice",
-///   "nickname": "Alice",
-///   "avatar": "http://...",
-///   "bio": "Hello!",
-///   "bioHeaderImg": "http://...",
-///   "status": 1,
-///   "followersCount": 42,
-///   "followeesCount": 7,
-///   "createdAt": "2024-01-15T10:30:00"
-/// }
-/// ```
 class User {
   final int id;
   final String username;
@@ -44,9 +31,9 @@ class User {
       id: json['id'] as int,
       username: json['username'] as String? ?? '',
       nickname: json['nickname'] as String? ?? '',
-      avatar: json['avatar'] as String?,
+      avatar: resolveImageUrl(json['avatar'] as String?),
       bio: json['bio'] as String?,
-      bioHeaderImg: json['bioHeaderImg'] as String?,
+      bioHeaderImg: resolveImageUrl(json['bioHeaderImg'] as String?),
       status: json['status'] as int? ?? 1,
       followersCount: json['followersCount'] as int?,
       followeesCount: json['followeesCount'] as int?,
