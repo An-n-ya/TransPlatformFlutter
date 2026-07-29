@@ -9,8 +9,22 @@ import '../user/user_detail_page.dart';
 import 'photo_grid.dart';
 import 'post_detail_page.dart';
 
-/// A feed-style list of [PostCard]s.
-class PostFeed extends StatelessWidget {
+/// Tracks user-initiated interaction overrides per post.
+class _PostInteractions {
+  bool liked;
+  bool collected;
+  int likesCount;
+  int collectionsCount;
+
+  _PostInteractions.fromPost(Post post)
+      : liked = post.liked ?? false,
+        collected = post.collected ?? false,
+        likesCount = post.likesCount,
+        collectionsCount = post.collectionsCount;
+}
+
+/// A feed-style list of [PostCard]s with persistent interaction state.
+class PostFeed extends StatefulWidget {
   final List<Post> posts;
   final bool isMe;
   final VoidCallback? onPostDeleted;
@@ -23,31 +37,142 @@ class PostFeed extends StatelessWidget {
   });
 
   @override
+  State<PostFeed> createState() => _PostFeedState();
+}
+
+class _PostFeedState extends State<PostFeed> {
+  final Map<int, _PostInteractions> _interactions = {};
+
+  _PostInteractions _forPost(Post post) {
+    return _interactions.putIfAbsent(
+      post.id,
+      () => _PostInteractions.fromPost(post),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     return ListView.builder(
       padding: const EdgeInsets.all(8),
-      itemCount: posts.length,
-      itemBuilder: (_, i) => PostCard(
-        post: posts[i],
-        isMe: isMe,
-        onPostDeleted: onPostDeleted,
-      ),
+      itemCount: widget.posts.length,
+      itemBuilder: (_, i) {
+        final post = widget.posts[i];
+        final ix = _forPost(post);
+        return PostCard(
+          post: post,
+          isMe: widget.isMe,
+          onPostDeleted: widget.onPostDeleted,
+          initialLiked: ix.liked,
+          initialCollected: ix.collected,
+          initialLikesCount: ix.likesCount,
+          initialCollectionsCount: ix.collectionsCount,
+          onInteractionChanged: (liked, collected, likesCount, collectionsCount) {
+            ix.liked = liked;
+            ix.collected = collected;
+            ix.likesCount = likesCount;
+            ix.collectionsCount = collectionsCount;
+          },
+        );
+      },
     );
   }
 }
 
 /// A single post card — avatar, content, images, action buttons.
-class PostCard extends StatelessWidget {
+class PostCard extends StatefulWidget {
   final Post post;
   final bool isMe;
   final VoidCallback? onPostDeleted;
+  final bool initialLiked;
+  final bool initialCollected;
+  final int initialLikesCount;
+  final int initialCollectionsCount;
+  final void Function(bool liked, bool collected, int likesCount, int collectionsCount)?
+      onInteractionChanged;
 
   const PostCard({
     super.key,
     required this.post,
     this.isMe = false,
     this.onPostDeleted,
+    this.initialLiked = false,
+    this.initialCollected = false,
+    this.initialLikesCount = 0,
+    this.initialCollectionsCount = 0,
+    this.onInteractionChanged,
   });
+
+  @override
+  State<PostCard> createState() => _PostCardState();
+}
+
+class _PostCardState extends State<PostCard> {
+  late bool _liked;
+  late bool _collected;
+  late int _likesCount;
+  late int _collectionsCount;
+
+  @override
+  void initState() {
+    super.initState();
+    _liked = widget.initialLiked;
+    _collected = widget.initialCollected;
+    _likesCount = widget.initialLikesCount;
+    _collectionsCount = widget.initialCollectionsCount;
+  }
+
+  void _syncToParent() {
+    widget.onInteractionChanged
+        ?.call(_liked, _collected, _likesCount, _collectionsCount);
+  }
+
+  Future<void> _toggleLike() async {
+    final repo = context.read<PostRepository>();
+    final result = _liked
+        ? await repo.unlikePost(widget.post.id)
+        : await repo.likePost(widget.post.id);
+    if (!mounted) return;
+    switch (result) {
+      case Ok<void>():{
+        setState(() {
+          _liked = !_liked;
+          _likesCount += _liked ? 1 : -1;
+        });
+        _syncToParent();
+      }
+      case Error<void>():{
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('操作失败')),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _toggleCollect() async {
+    final repo = context.read<PostRepository>();
+    final result = _collected
+        ? await repo.uncollectPost(widget.post.id)
+        : await repo.collectPost(widget.post.id);
+    if (!mounted) return;
+    switch (result) {
+      case Ok<void>():{
+        setState(() {
+          _collected = !_collected;
+          _collectionsCount += _collected ? 1 : -1;
+        });
+        _syncToParent();
+      }
+      case Error<void>():{
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('操作失败')),
+          );
+        }
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +189,7 @@ class PostCard extends StatelessWidget {
             leading: GestureDetector(
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (_) => UserDetailPage(user: post.author),
+                  builder: (_) => UserDetailPage(user: widget.post.author),
                 ),
               ),
               child: ClipOval(child: _buildAvatar(context)),
@@ -72,28 +197,28 @@ class PostCard extends StatelessWidget {
             title: GestureDetector(
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (_) => UserDetailPage(user: post.author),
+                  builder: (_) => UserDetailPage(user: widget.post.author),
                 ),
               ),
-              child: Text(post.author.nickname),
+              child: Text(widget.post.author.nickname),
             ),
             subtitle: Row(
               children: [
-                Text(_formatDate(post.createdAt)),
-                if (post.location != null) ...[
+                Text(_formatDate(widget.post.createdAt)),
+                if (widget.post.location != null) ...[
                   const SizedBox(width: 8),
                   Icon(Icons.location_on,
                       size: 14, color: cs.onSurfaceVariant),
                   const SizedBox(width: 2),
-                  Text(post.location!, style: theme.textTheme.bodySmall),
+                  Text(widget.post.location!, style: theme.textTheme.bodySmall),
                 ],
               ],
             ),
-            trailing: isMe
+            trailing: widget.isMe
                 ? PopupMenuButton<String>(
-                    icon: const Icon(Icons.more_horiz),
+                    icon: const Icon(Icons.more_vert),
                     onSelected: (value) {
-                      if (value == 'delete') _deletePost(context);
+                      if (value == 'delete') _deletePost();
                     },
                     itemBuilder: (_) => [
                       const PopupMenuItem(
@@ -109,48 +234,46 @@ class PostCard extends StatelessWidget {
                       ),
                     ],
                   )
-                : const Icon(Icons.more_horiz),
+                : const Icon(Icons.more_vert),
           ),
 
           // ── Content ──
-          if (post.content.isNotEmpty)
+          if (widget.post.content.isNotEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(post.content),
+              child: Text(widget.post.content),
             ),
 
           // ── Images ──
-          if (post.images.isNotEmpty)
+          if (widget.post.images.isNotEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: PhotoGrid(images: post.images),
+              child: PhotoGrid(images: widget.post.images),
             ),
 
           // ── Action buttons ──
           Row(
             children: [
               _ActionBtn(
-                icon: post.liked == true ? Icons.favorite : Icons.favorite_border,
-                label: '${post.likesCount}',
-                color: post.liked == true ? Colors.red : null,
-                onPressed: () {},
+                icon: _liked ? Icons.favorite : Icons.favorite_border,
+                label: '$_likesCount',
+                color: _liked ? Colors.red : null,
+                onPressed: _toggleLike,
               ),
               _ActionBtn(
                 icon: Icons.mode_comment_outlined,
-                label: '${post.commentsCount}',
+                label: '${widget.post.commentsCount}',
                 onPressed: () => Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) => PostDetailPage(post: post),
+                    builder: (_) => PostDetailPage(post: widget.post),
                   ),
                 ),
               ),
               _ActionBtn(
-                icon: post.collected == true
-                    ? Icons.bookmark
-                    : Icons.bookmark_border,
-                label: '${post.collectionsCount}',
-                color: post.collected == true ? Colors.amber : null,
-                onPressed: () {},
+                icon: _collected ? Icons.bookmark : Icons.bookmark_border,
+                label: '$_collectionsCount',
+                color: _collected ? Colors.amber : null,
+                onPressed: _toggleCollect,
               ),
             ],
           ),
@@ -168,7 +291,7 @@ class PostCard extends StatelessWidget {
   }
 
   Widget _buildAvatar(BuildContext context) {
-    final url = post.author.avatar;
+    final url = widget.post.author.avatar;
     const fallback = CircleAvatar(radius: 20, child: Icon(Icons.person));
     if (url == null) return fallback;
     if (url.startsWith('http')) {
@@ -179,7 +302,7 @@ class PostCard extends StatelessWidget {
         errorBuilder: (_, _, _) => fallback);
   }
 
-  Future<void> _deletePost(BuildContext context) async {
+  Future<void> _deletePost() async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -201,7 +324,7 @@ class PostCard extends StatelessWidget {
 
     if (confirmed != true) return;
 
-    final result = await context.read<PostRepository>().deletePost(post.id);
+    final result = await context.read<PostRepository>().deletePost(widget.post.id);
     if (!context.mounted) return;
 
     switch (result) {
@@ -209,7 +332,7 @@ class PostCard extends StatelessWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('已删除')),
         );
-        onPostDeleted?.call();
+        widget.onPostDeleted?.call();
       }
       case Error<void>():{
         ScaffoldMessenger.of(context).showSnackBar(
