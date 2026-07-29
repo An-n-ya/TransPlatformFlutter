@@ -135,7 +135,7 @@ class PostCard extends StatelessWidget {
                 onPressed: () {},
               ),
               _ActionBtn(
-                icon: Icons.comment,
+                icon: Icons.mode_comment_outlined,
                 label: '${post.commentsCount}',
                 onPressed: () {},
               ),
