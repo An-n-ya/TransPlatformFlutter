@@ -7,6 +7,7 @@ import '../../domain/models/post.dart';
 import '../../utils/result.dart';
 import '../user/user_detail_page.dart';
 import 'photo_grid.dart';
+import 'post_detail_page.dart';
 
 /// A feed-style list of [PostCard]s.
 class PostFeed extends StatelessWidget {
@@ -137,7 +138,11 @@ class PostCard extends StatelessWidget {
               _ActionBtn(
                 icon: Icons.mode_comment_outlined,
                 label: '${post.commentsCount}',
-                onPressed: () {},
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => PostDetailPage(post: post),
+                  ),
+                ),
               ),
               _ActionBtn(
                 icon: post.collected == true
