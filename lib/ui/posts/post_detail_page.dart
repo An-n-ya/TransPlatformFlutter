@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/repositories/post/post_repository.dart';
@@ -9,6 +8,7 @@ import '../../domain/models/post.dart';
 import '../../domain/models/user.dart';
 import '../../utils/result.dart';
 import 'photo_grid.dart';
+import 'post_card.dart';
 
 /// Post detail page with comments and comment input.
 class PostDetailPage extends StatefulWidget {
@@ -215,9 +215,26 @@ class _PostDetailPageState extends State<PostDetailPage> {
               child: SingleChildScrollView(
                 padding: const EdgeInsets.only(top: 10, bottom: 16),
                 child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _PostHeader(post: widget.post),
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    PostHeader(
+                      user: widget.post.author,
+                      createdAt: widget.post.createdAt,
+                      location: widget.post.location,
+                      trailing: FilledButton.icon(
+                        onPressed: () {},
+                        icon:
+                            const Icon(Icons.notifications_none, size: 18),
+                        label: const Text('Follow'),
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(100),
+                          ),
+                        ),
+                      ),
+                    ),
                   if (widget.post.content.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.symmetric(
@@ -235,7 +252,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
                       child: PhotoGrid(images: widget.post.images),
                     ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
                     child: _InteractionBar(
                       liked: _liked,
                       collected: _collected,
@@ -294,70 +311,6 @@ class _PostDetailPageState extends State<PostDetailPage> {
   }
 }
 
-// ── Post header ──
-
-class _PostHeader extends StatelessWidget {
-  final Post post;
-  const _PostHeader({required this.post});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _Avatar(user: post.author),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  post.author.nickname,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  _formatMeta(post),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: cs.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          FilledButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.notifications_none, size: 18),
-            label: const Text('Follow'),
-            style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(100),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _formatMeta(Post post) {
-    final parts = <String>[
-      DateFormat('yyyy-MM-dd HH:mm').format(post.createdAt),
-    ];
-    if (post.location != null && post.location!.isNotEmpty)
-      parts.add(post.location!);
-    return parts.join(' · ');
-  }
-}
-
 // ── Interaction counts ──
 
 class _InteractionBar extends StatelessWidget {
@@ -381,36 +334,27 @@ class _InteractionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     return Row(
       children: [
-        IconButton(
-          icon: Icon(
-            liked ? Icons.favorite : Icons.favorite_border,
-            color: liked ? Colors.red : cs.onSurface,
-            size: 16,
-          ),
+        PostActionBtn(
+          icon: liked ? Icons.favorite : Icons.favorite_border,
+          label: '$likesCount',
+          color: liked ? Colors.red : null,
           onPressed: onLike,
         ),
-        Text('$likesCount'),
-        const SizedBox(width: 16),
-
-        IconButton(
-          icon: Icon(Icons.mode_comment_outlined, size: 16),
+        const SizedBox(width: 8),
+        PostActionBtn(
+          icon: Icons.mode_comment_outlined,
+          label: '$commentsCount',
           onPressed: () {},
         ),
-        Text('$commentsCount'),
-        const SizedBox(width: 16),
-
-        IconButton(
-          icon: Icon(
-            collected ? Icons.bookmark : Icons.bookmark_border,
-            color: collected ? Colors.amber : cs.onSurface,
-            size: 16,
-          ),
+        const SizedBox(width: 8),
+        PostActionBtn(
+          icon: collected ? Icons.bookmark : Icons.bookmark_border,
+          label: '$collectionsCount',
+          color: collected ? Colors.amber : null,
           onPressed: onCollect,
         ),
-        Text('$collectionsCount'),
       ],
     );
   }
@@ -434,9 +378,9 @@ class _CommentList extends StatelessWidget {
     return ListView.separated(
       physics: const NeverScrollableScrollPhysics(),
       shrinkWrap: true,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 0),
       itemCount: comments.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 16),
+      separatorBuilder: (_, _) => const SizedBox(height: 8),
       itemBuilder: (_, i) => _CommentTile(
         comment: comments[i],
         isMe: currentUserId != null && comments[i].author.id == currentUserId,
@@ -446,131 +390,103 @@ class _CommentList extends StatelessWidget {
   }
 }
 
-class _CommentTile extends StatelessWidget {
+class _CommentTile extends StatefulWidget {
   final Comment comment;
   final bool isMe;
   final VoidCallback? onDelete;
 
-  const _CommentTile({required this.comment, this.isMe = false, this.onDelete});
+  const _CommentTile({
+    required this.comment,
+    this.isMe = false,
+    this.onDelete,
+  });
+
+  @override
+  State<_CommentTile> createState() => _CommentTileState();
+}
+
+class _CommentTileState extends State<_CommentTile> {
+  late bool _liked;
+  late int _likesCount;
+
+  @override
+  void initState() {
+    super.initState();
+    _liked = false;
+    _likesCount = widget.comment.likesCount;
+  }
+
+  Future<void> _toggleLike() async {
+    final repo = context.read<PostRepository>();
+    final result = _liked
+        ? await repo.unlikeComment(widget.comment.id)
+        : await repo.likeComment(widget.comment.id);
+    if (!mounted) return;
+    switch (result) {
+      case Ok<void>():{
+        setState(() {
+          _liked = !_liked;
+          _likesCount += _liked ? 1 : -1;
+        });
+      }
+      case Error<void>():{
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('操作失败')),
+          );
+        }
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-
-    return Row(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _Avatar(user: comment.author),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          comment.author.nickname,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        Text(
-                          DateFormat(
-                            'yyyy-MM-dd HH:mm',
-                          ).format(comment.createdAt),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: cs.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
+        PostHeader(
+          user: widget.comment.author,
+          createdAt: widget.comment.createdAt,
+          trailing: widget.isMe
+              ? PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert, size: 20),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onSelected: (value) {
+                    if (value == 'delete') widget.onDelete?.call();
+                  },
+                  itemBuilder: (_) => [
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete_outline,
+                              size: 20, color: Colors.red),
+                          SizedBox(width: 8),
+                          Text('删除', style: TextStyle(color: Colors.red)),
+                        ],
+                      ),
                     ),
-                  ),
-
-                  if (isMe)
-                    PopupMenuButton<String>(
-                      icon: const Icon(Icons.more_vert, size: 20),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      onSelected: (value) {
-                        if (value == 'delete') onDelete?.call();
-                      },
-                      itemBuilder: (_) => [
-                        const PopupMenuItem(
-                          value: 'delete',
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.delete_outline,
-                                size: 20,
-                                color: Colors.red,
-                              ),
-                              SizedBox(width: 8),
-                              Text('删除', style: TextStyle(color: Colors.red)),
-                            ],
-                          ),
-                        ),
-                      ],
-                    )
-                  else
-                    const SizedBox(width: 48),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Text(comment.content),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Icon(Icons.favorite_border, size: 18, color: cs.onSurface),
-                  const SizedBox(width: 4),
-                  Text('${comment.likesCount}'),
-                ],
-              ),
-            ],
+                  ],
+                )
+              : const SizedBox(width: 48),
+        ),
+        const SizedBox(height: 4),
+        Padding(
+          padding: const EdgeInsets.only(left: 72),
+          child: Text(widget.comment.content),
+        ),
+        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.only(left: 60),
+          child: PostActionBtn(
+            icon: _liked ? Icons.favorite : Icons.favorite_border,
+            label: '$_likesCount',
+            color: _liked ? Colors.red : null,
+            onPressed: _toggleLike,
           ),
         ),
       ],
-    );
-  }
-}
-
-// ── User avatar ──
-
-class _Avatar extends StatelessWidget {
-  final User user;
-  const _Avatar({required this.user});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    ImageProvider? image;
-    if (user.avatar != null && user.avatar!.isNotEmpty) {
-      image = user.avatar!.startsWith('http')
-          ? NetworkImage(user.avatar!)
-          : AssetImage(user.avatar!) as ImageProvider;
-    }
-
-    return CircleAvatar(
-      radius: 20,
-      backgroundColor: cs.primaryContainer,
-      backgroundImage: image,
-      child: image == null
-          ? Text(
-              user.nickname.isNotEmpty
-                  ? user.nickname[0].toUpperCase()
-                  : '?',
-              style: TextStyle(
-                color: cs.onPrimaryContainer,
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
-            )
-          : null,
     );
   }
 }

@@ -57,6 +57,12 @@ abstract class PostRepository {
   /// Delete a comment.
   Future<Result<void>> deleteComment(int commentId);
 
+  /// Like a comment.
+  Future<Result<void>> likeComment(int commentId);
+
+  /// Unlike a comment.
+  Future<Result<void>> unlikeComment(int commentId);
+
   /// Collect a post.
   Future<Result<void>> collectPost(int postId);
 

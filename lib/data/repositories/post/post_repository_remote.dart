@@ -165,6 +165,16 @@ class PostRepositoryRemote implements PostRepository {
   }
 
   @override
+  Future<Result<void>> likeComment(int commentId) async {
+    return _api.post<void>('/api/v1/comments/$commentId/like');
+  }
+
+  @override
+  Future<Result<void>> unlikeComment(int commentId) async {
+    return _api.delete<void>('/api/v1/comments/$commentId/like');
+  }
+
+  @override
   Future<Result<void>> collectPost(int postId) async {
     return _api.post<void>('/api/v1/posts/$postId/collect');
   }

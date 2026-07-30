@@ -112,6 +112,18 @@ class PostRepositoryLocal implements PostRepository {
   }
 
   @override
+  Future<Result<void>> likeComment(int commentId) async {
+    await Future.delayed(const Duration(milliseconds: 100));
+    return Result.ok(null);
+  }
+
+  @override
+  Future<Result<void>> unlikeComment(int commentId) async {
+    await Future.delayed(const Duration(milliseconds: 100));
+    return Result.ok(null);
+  }
+
+  @override
   Future<Result<void>> collectPost(int postId) async {
     await Future.delayed(const Duration(milliseconds: 100));
     return Result.ok(null);

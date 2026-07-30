@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../data/repositories/post/post_repository.dart';
 import '../../domain/models/post.dart';
+import '../../domain/models/user.dart';
 import '../../utils/result.dart';
 import '../user/user_detail_page.dart';
 import 'photo_grid.dart';
@@ -17,10 +18,10 @@ class _PostInteractions {
   int collectionsCount;
 
   _PostInteractions.fromPost(Post post)
-      : liked = post.liked ?? false,
-        collected = post.collected ?? false,
-        likesCount = post.likesCount,
-        collectionsCount = post.collectionsCount;
+    : liked = post.liked ?? false,
+      collected = post.collected ?? false,
+      likesCount = post.likesCount,
+      collectionsCount = post.collectionsCount;
 }
 
 /// A feed-style list of [PostCard]s with persistent interaction state.
@@ -66,12 +67,13 @@ class _PostFeedState extends State<PostFeed> {
           initialCollected: ix.collected,
           initialLikesCount: ix.likesCount,
           initialCollectionsCount: ix.collectionsCount,
-          onInteractionChanged: (liked, collected, likesCount, collectionsCount) {
-            ix.liked = liked;
-            ix.collected = collected;
-            ix.likesCount = likesCount;
-            ix.collectionsCount = collectionsCount;
-          },
+          onInteractionChanged:
+              (liked, collected, likesCount, collectionsCount) {
+                ix.liked = liked;
+                ix.collected = collected;
+                ix.likesCount = likesCount;
+                ix.collectionsCount = collectionsCount;
+              },
         );
       },
     );
@@ -87,8 +89,13 @@ class PostCard extends StatefulWidget {
   final bool initialCollected;
   final int initialLikesCount;
   final int initialCollectionsCount;
-  final void Function(bool liked, bool collected, int likesCount, int collectionsCount)?
-      onInteractionChanged;
+  final void Function(
+    bool liked,
+    bool collected,
+    int likesCount,
+    int collectionsCount,
+  )?
+  onInteractionChanged;
 
   const PostCard({
     super.key,
@@ -122,8 +129,12 @@ class _PostCardState extends State<PostCard> {
   }
 
   void _syncToParent() {
-    widget.onInteractionChanged
-        ?.call(_liked, _collected, _likesCount, _collectionsCount);
+    widget.onInteractionChanged?.call(
+      _liked,
+      _collected,
+      _likesCount,
+      _collectionsCount,
+    );
   }
 
   Future<void> _toggleLike() async {
@@ -133,20 +144,22 @@ class _PostCardState extends State<PostCard> {
         : await repo.likePost(widget.post.id);
     if (!mounted) return;
     switch (result) {
-      case Ok<void>():{
-        setState(() {
-          _liked = !_liked;
-          _likesCount += _liked ? 1 : -1;
-        });
-        _syncToParent();
-      }
-      case Error<void>():{
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('操作失败')),
-          );
+      case Ok<void>():
+        {
+          setState(() {
+            _liked = !_liked;
+            _likesCount += _liked ? 1 : -1;
+          });
+          _syncToParent();
         }
-      }
+      case Error<void>():
+        {
+          if (mounted) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(const SnackBar(content: Text('操作失败')));
+          }
+        }
     }
   }
 
@@ -157,63 +170,37 @@ class _PostCardState extends State<PostCard> {
         : await repo.collectPost(widget.post.id);
     if (!mounted) return;
     switch (result) {
-      case Ok<void>():{
-        setState(() {
-          _collected = !_collected;
-          _collectionsCount += _collected ? 1 : -1;
-        });
-        _syncToParent();
-      }
-      case Error<void>():{
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('操作失败')),
-          );
+      case Ok<void>():
+        {
+          setState(() {
+            _collected = !_collected;
+            _collectionsCount += _collected ? 1 : -1;
+          });
+          _syncToParent();
         }
-      }
+      case Error<void>():
+        {
+          if (mounted) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(const SnackBar(content: Text('操作失败')));
+          }
+        }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ── Header ──
-          ListTile(
-            leading: GestureDetector(
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => UserDetailPage(user: widget.post.author),
-                ),
-              ),
-              child: ClipOval(child: _buildAvatar(context)),
-            ),
-            title: GestureDetector(
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => UserDetailPage(user: widget.post.author),
-                ),
-              ),
-              child: Text(widget.post.author.nickname),
-            ),
-            subtitle: Row(
-              children: [
-                Text(_formatDate(widget.post.createdAt)),
-                if (widget.post.location != null) ...[
-                  const SizedBox(width: 8),
-                  Icon(Icons.location_on,
-                      size: 14, color: cs.onSurfaceVariant),
-                  const SizedBox(width: 2),
-                  Text(widget.post.location!, style: theme.textTheme.bodySmall),
-                ],
-              ],
-            ),
+          PostHeader(
+            user: widget.post.author,
+            createdAt: widget.post.createdAt,
+            location: widget.post.location,
             trailing: widget.isMe
                 ? PopupMenuButton<String>(
                     icon: const Icon(Icons.more_vert),
@@ -225,8 +212,11 @@ class _PostCardState extends State<PostCard> {
                         value: 'delete',
                         child: Row(
                           children: [
-                            Icon(Icons.delete_outline,
-                                size: 20, color: Colors.red),
+                            Icon(
+                              Icons.delete_outline,
+                              size: 20,
+                              color: Colors.red,
+                            ),
                             SizedBox(width: 8),
                             Text('删除', style: TextStyle(color: Colors.red)),
                           ],
@@ -254,13 +244,13 @@ class _PostCardState extends State<PostCard> {
           // ── Action buttons ──
           Row(
             children: [
-              _ActionBtn(
+              PostActionBtn(
                 icon: _liked ? Icons.favorite : Icons.favorite_border,
                 label: '$_likesCount',
                 color: _liked ? Colors.red : null,
                 onPressed: _toggleLike,
               ),
-              _ActionBtn(
+              PostActionBtn(
                 icon: Icons.mode_comment_outlined,
                 label: '${widget.post.commentsCount}',
                 onPressed: () => Navigator.of(context).push(
@@ -269,7 +259,7 @@ class _PostCardState extends State<PostCard> {
                   ),
                 ),
               ),
-              _ActionBtn(
+              PostActionBtn(
                 icon: _collected ? Icons.bookmark : Icons.bookmark_border,
                 label: '$_collectionsCount',
                 color: _collected ? Colors.amber : null,
@@ -280,26 +270,6 @@ class _PostCardState extends State<PostCard> {
         ],
       ),
     );
-  }
-
-  String _formatDate(DateTime dt) {
-    final diff = DateTime.now().difference(dt);
-    if (diff.inMinutes < 60) return '${diff.inMinutes} 分钟前';
-    if (diff.inHours < 24) return '${diff.inHours} 小时前';
-    if (diff.inDays < 7) return '${diff.inDays} 天前';
-    return DateFormat('yyyy-MM-dd').format(dt);
-  }
-
-  Widget _buildAvatar(BuildContext context) {
-    final url = widget.post.author.avatar;
-    const fallback = CircleAvatar(radius: 20, child: Icon(Icons.person));
-    if (url == null) return fallback;
-    if (url.startsWith('http')) {
-      return Image.network(url, width: 40, height: 40, fit: BoxFit.cover,
-          errorBuilder: (_, _, _) => fallback);
-    }
-    return Image.asset(url, width: 40, height: 40, fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => fallback);
   }
 
   Future<void> _deletePost() async {
@@ -315,8 +285,7 @@ class _PostCardState extends State<PostCard> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('删除',
-                style: TextStyle(color: Colors.red)),
+            child: const Text('删除', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -324,33 +293,118 @@ class _PostCardState extends State<PostCard> {
 
     if (confirmed != true) return;
 
-    final result = await context.read<PostRepository>().deletePost(widget.post.id);
+    final result = await context.read<PostRepository>().deletePost(
+      widget.post.id,
+    );
     if (!context.mounted) return;
 
     switch (result) {
-      case Ok<void>():{
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('已删除')),
-        );
-        widget.onPostDeleted?.call();
-      }
-      case Error<void>():{
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('删除失败')),
-        );
-      }
+      case Ok<void>():
+        {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('已删除')));
+          widget.onPostDeleted?.call();
+        }
+      case Error<void>():
+        {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('删除失败')));
+        }
     }
   }
 }
 
+/// Reusable post/comment header: avatar, nickname, date+location, trailing.
+class PostHeader extends StatelessWidget {
+  final User user;
+  final DateTime createdAt;
+  final String? location;
+  final Widget? trailing;
+
+  const PostHeader({
+    super.key,
+    required this.user,
+    required this.createdAt,
+    this.location,
+    this.trailing,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return ListTile(
+      leading: GestureDetector(
+        onTap: () => Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => UserDetailPage(user: user))),
+        child: ClipOval(child: _buildAvatar(context)),
+      ),
+      title: GestureDetector(
+        onTap: () => Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => UserDetailPage(user: user))),
+        child: Text(user.nickname),
+      ),
+      subtitle: Row(
+        children: [
+          Text(_formatDate(createdAt)),
+          if (location != null) ...[
+            const SizedBox(width: 8),
+            Icon(Icons.location_on, size: 14, color: cs.onSurfaceVariant),
+            const SizedBox(width: 2),
+            Text(location!, style: Theme.of(context).textTheme.bodySmall),
+          ],
+        ],
+      ),
+      trailing: trailing,
+    );
+  }
+
+  String _formatDate(DateTime dt) {
+    final diff = DateTime.now().difference(dt);
+    if (diff.inMinutes < 60) return '${diff.inMinutes} 分钟前';
+    if (diff.inHours < 24) return '${diff.inHours} 小时前';
+    if (diff.inDays < 7) return '${diff.inDays} 天前';
+    return DateFormat('yyyy-MM-dd').format(dt);
+  }
+
+  Widget _buildAvatar(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    ImageProvider? image;
+    if (user.avatar != null && user.avatar!.isNotEmpty) {
+      image = user.avatar!.startsWith('http')
+          ? NetworkImage(user.avatar!)
+          : AssetImage(user.avatar!) as ImageProvider;
+    }
+    return CircleAvatar(
+      radius: 20,
+      backgroundColor: cs.primaryContainer,
+      backgroundImage: image,
+      child: image == null
+          ? Text(
+              user.nickname.isNotEmpty ? user.nickname[0].toUpperCase() : '?',
+              style: TextStyle(
+                color: cs.onPrimaryContainer,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            )
+          : null,
+    );
+  }
+}
+
 /// Small helper for like / comment / collect buttons.
-class _ActionBtn extends StatelessWidget {
+class PostActionBtn extends StatelessWidget {
   final IconData icon;
   final String label;
   final Color? color;
   final VoidCallback onPressed;
 
-  const _ActionBtn({
+  const PostActionBtn({
+    super.key,
     required this.icon,
     required this.label,
     this.color,
