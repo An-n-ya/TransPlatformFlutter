@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/repositories/auth/auth_repository.dart';
+import '../../data/services/current_user_provider.dart';
 import '../../data/services/token_storage_service.dart';
 import '../../domain/models/auth_response.dart';
 import '../../utils/result.dart';
@@ -58,6 +59,9 @@ class _LoginPageState extends State<LoginPage> {
               accessToken: result.value.accessToken,
               refreshToken: result.value.refreshToken,
             );
+        context
+            .read<CurrentUserProvider>()
+            .setUserId(result.value.user.id);
         if (!mounted) return;
 
         // Navigate to main app, replacing login page

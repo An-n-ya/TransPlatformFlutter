@@ -22,6 +22,8 @@ class PostActionBtn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    // FIXME: 这个TextButton内部的`_InputPadding`太大了，能否把这个Padding去掉？
+    // 如果不行，直接手写一个button也行
     return TextButton.icon(
       style: TextButton.styleFrom(foregroundColor: color ?? cs.onSurface),
       onPressed: onPressed,

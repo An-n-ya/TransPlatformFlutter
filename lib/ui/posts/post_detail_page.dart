@@ -5,10 +5,9 @@ import 'package:trans_platform/ui/posts/comment_input.dart';
 import 'package:trans_platform/ui/posts/interaction.dart';
 
 import '../../data/repositories/post/post_repository.dart';
-import '../../data/repositories/user/user_repository.dart';
+import '../../data/services/current_user_provider.dart';
 import '../../domain/models/comment.dart';
 import '../../domain/models/post.dart';
-import '../../domain/models/user.dart';
 import '../../utils/result.dart';
 import 'post_card.dart';
 
@@ -57,14 +56,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
     super.dispose();
   }
 
-  Future<void> _loadCurrentUser() async {
-    // TODO: 使用 Provider 直接获取当前用户信息，而不是从数据库中查询
-    // 在用户登录后将当前用户的 ID 存储在Provider全局状态管理工具
-    final result = await context.read<UserRepository>().getCurrentUser();
-    if (!mounted) return;
-    if (result is Ok<User>) {
-      setState(() => _currentUserId = result.value.id);
-    }
+  void _loadCurrentUser() {
+    _currentUserId =
+        context.read<CurrentUserProvider>().userId;
   }
 
   Future<Result<List<Comment>>> _loadComments() =>
