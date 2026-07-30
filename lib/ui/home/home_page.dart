@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../settings/settings_page.dart';
+import '../notification/notification_page.dart';
 import '../posts/add_post_page.dart';
 import '../posts/posts_page.dart';
 
@@ -30,7 +31,12 @@ class HomePage extends StatelessWidget {
             onPressed: () {},
           ),
           actions: <Widget>[
-            IconButton(icon: const Icon(Icons.notifications), onPressed: () {}),
+            IconButton(
+              icon: const Icon(Icons.notifications),
+              onPressed: () => Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const NotificationPage())),
+            ),
             IconButton(
               icon: const Icon(Icons.settings),
               onPressed: () => Navigator.of(

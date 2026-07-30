@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/repositories/post/post_repository.dart';
 import '../../domain/models/post.dart';
 import '../../domain/models/user.dart';
 import '../../utils/result.dart';
+import '../../utils/time.dart';
 import '../user/user_detail_page.dart';
 import 'photo_grid.dart';
 import 'post_detail_page.dart';
@@ -191,6 +191,9 @@ class _PostCardState extends State<PostCard> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: Column(
@@ -199,8 +202,30 @@ class _PostCardState extends State<PostCard> {
           // ── Header ──
           PostHeader(
             user: widget.post.author,
-            createdAt: widget.post.createdAt,
-            location: widget.post.location,
+            onAvatarTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => UserDetailPage(user: widget.post.author),
+              ),
+            ),
+            title: GestureDetector(
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => UserDetailPage(user: widget.post.author),
+                ),
+              ),
+              child: Text(widget.post.author.nickname),
+            ),
+            subtitle: Row(
+              children: [
+                Text(formatRelativeTime(widget.post.createdAt)),
+                if (widget.post.location != null) ...[
+                  const SizedBox(width: 8),
+                  Icon(Icons.location_on, size: 14, color: cs.onSurfaceVariant),
+                  const SizedBox(width: 2),
+                  Text(widget.post.location!, style: theme.textTheme.bodySmall),
+                ],
+              ],
+            ),
             trailing: widget.isMe
                 ? PopupMenuButton<String>(
                     icon: const Icon(Icons.more_vert),
@@ -316,58 +341,35 @@ class _PostCardState extends State<PostCard> {
   }
 }
 
-/// Reusable post/comment header: avatar, nickname, date+location, trailing.
+/// Reusable post/comment header: avatar, title, subtitle, trailing.
 class PostHeader extends StatelessWidget {
   final User user;
-  final DateTime createdAt;
-  final String? location;
+  final Widget? title;
+  final Widget? subtitle;
   final Widget? trailing;
+  final VoidCallback? onAvatarTap;
 
   const PostHeader({
     super.key,
     required this.user,
-    required this.createdAt,
-    this.location,
+    this.title,
+    this.subtitle,
     this.trailing,
+    this.onAvatarTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     return ListTile(
+      contentPadding: EdgeInsets.symmetric(horizontal: 16),
       leading: GestureDetector(
-        onTap: () => Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (_) => UserDetailPage(user: user))),
+        onTap: onAvatarTap,
         child: ClipOval(child: _buildAvatar(context)),
       ),
-      title: GestureDetector(
-        onTap: () => Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (_) => UserDetailPage(user: user))),
-        child: Text(user.nickname),
-      ),
-      subtitle: Row(
-        children: [
-          Text(_formatDate(createdAt)),
-          if (location != null) ...[
-            const SizedBox(width: 8),
-            Icon(Icons.location_on, size: 14, color: cs.onSurfaceVariant),
-            const SizedBox(width: 2),
-            Text(location!, style: Theme.of(context).textTheme.bodySmall),
-          ],
-        ],
-      ),
+      title: title ?? Text(user.nickname),
+      subtitle: subtitle,
       trailing: trailing,
     );
-  }
-
-  String _formatDate(DateTime dt) {
-    final diff = DateTime.now().difference(dt);
-    if (diff.inMinutes < 60) return '${diff.inMinutes} 分钟前';
-    if (diff.inHours < 24) return '${diff.inHours} 小时前';
-    if (diff.inDays < 7) return '${diff.inDays} 天前';
-    return DateFormat('yyyy-MM-dd').format(dt);
   }
 
   Widget _buildAvatar(BuildContext context) {

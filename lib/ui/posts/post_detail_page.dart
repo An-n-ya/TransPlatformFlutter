@@ -7,6 +7,8 @@ import '../../domain/models/comment.dart';
 import '../../domain/models/post.dart';
 import '../../domain/models/user.dart';
 import '../../utils/result.dart';
+import '../../utils/time.dart';
+import '../user/user_detail_page.dart';
 import 'photo_grid.dart';
 import 'post_card.dart';
 
@@ -219,8 +221,41 @@ class _PostDetailPageState extends State<PostDetailPage> {
                   children: [
                     PostHeader(
                       user: widget.post.author,
-                      createdAt: widget.post.createdAt,
-                      location: widget.post.location,
+                      onAvatarTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              UserDetailPage(user: widget.post.author),
+                        ),
+                      ),
+                      title: GestureDetector(
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                UserDetailPage(user: widget.post.author),
+                          ),
+                        ),
+                        child: Text(widget.post.author.nickname),
+                      ),
+                      subtitle: Row(
+                        children: [
+                          Text(formatRelativeTime(widget.post.createdAt)),
+                          if (widget.post.location != null) ...[
+                            const SizedBox(width: 8),
+                            Icon(
+                              Icons.location_on,
+                              size: 14,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                            ),
+                            const SizedBox(width: 2),
+                            Text(
+                              widget.post.location!,
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ],
+                        ],
+                      ),
                       trailing: FilledButton.icon(
                         onPressed: () {},
                         icon:
@@ -446,7 +481,27 @@ class _CommentTileState extends State<_CommentTile> {
       children: [
         PostHeader(
           user: widget.comment.author,
-          createdAt: widget.comment.createdAt,
+          onAvatarTap: () => Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) =>
+                  UserDetailPage(user: widget.comment.author),
+            ),
+          ),
+          title: GestureDetector(
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) =>
+                    UserDetailPage(user: widget.comment.author),
+              ),
+            ),
+            child: Text(widget.comment.author.nickname),
+          ),
+          subtitle: Text(
+            formatRelativeTime(widget.comment.createdAt),
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
           trailing: widget.isMe
               ? PopupMenuButton<String>(
                   icon: const Icon(Icons.more_vert, size: 20),
