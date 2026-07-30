@@ -210,9 +210,11 @@ class _PostDetailPageState extends State<PostDetailPage> {
       body: Column(
         children: [
           Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.only(top: 10, bottom: 16),
-              child: Column(
+            child: GestureDetector(
+              onTap: () => FocusScope.of(context).unfocus(),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.only(top: 10, bottom: 16),
+                child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _PostHeader(post: widget.post),
@@ -247,6 +249,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
                   const Divider(height: 24),
                   _buildCommentsSection(),
                 ],
+                ),
               ),
             ),
           ),
