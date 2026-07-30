@@ -5,9 +5,9 @@ import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
 import 'package:trans_platform/data/repositories/post/post_repository.dart';
 import 'package:trans_platform/domain/models/comment.dart';
-import 'package:trans_platform/domain/models/user.dart';
 import 'package:trans_platform/ui/posts/interaction.dart';
 import 'package:trans_platform/ui/posts/post_card.dart';
+import 'package:trans_platform/ui/posts/comment_input.dart';
 import 'package:trans_platform/utils/result.dart';
 
 class TopReply extends StatelessWidget {
@@ -34,9 +34,9 @@ class TopReply extends StatelessWidget {
               Expanded(
                 child: RichText(
                   text: TextSpan(
-                    style: DefaultTextStyle.of(context)
-                        .style
-                        .copyWith(fontSize: 14, height: 20 / 14),
+                    style: DefaultTextStyle.of(
+                      context,
+                    ).style.copyWith(fontSize: 14, height: 20 / 14),
                     children: [
                       TextSpan(
                         text: '${topReply.nickname}:',
@@ -52,13 +52,15 @@ class TopReply extends StatelessWidget {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.favorite_border,
-                      size: 14, color: cs.onSurfaceVariant),
+                  Icon(
+                    Icons.favorite_border,
+                    size: 14,
+                    color: cs.onSurfaceVariant,
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     '${topReply.likesCount}',
-                    style:
-                        TextStyle(fontSize: 14, color: cs.onSurfaceVariant),
+                    style: TextStyle(fontSize: 14, color: cs.onSurfaceVariant),
                   ),
                 ],
               ),
@@ -71,8 +73,7 @@ class TopReply extends StatelessWidget {
               IconButton(
                 color: Theme.of(context).colorScheme.primary,
                 icon: const Icon(Icons.mode_comment_outlined, size: 16),
-                constraints:
-                    const BoxConstraints(minWidth: 24, minHeight: 24),
+                constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
                 padding: EdgeInsets.zero,
                 onPressed: () => showModalBottomSheet(
                   context: context,
@@ -83,7 +84,7 @@ class TopReply extends StatelessWidget {
                     ),
                   ),
                   builder: (_) => SizedBox(
-                    height: MediaQuery.of(context).size.height * 0.85,
+                    height: MediaQuery.of(context).size.height * 0.9,
                     child: _ReplyDetailSheet(comment: comment),
                   ),
                 ),
@@ -92,8 +93,7 @@ class TopReply extends StatelessWidget {
                 '${comment.commentsCount}',
                 style: TextStyle(
                   fontSize: 12,
-                  color:
-                      Theme.of(context).colorScheme.onSurfaceVariant,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
@@ -118,12 +118,53 @@ class _ReplyDetailSheet extends StatefulWidget {
 class _ReplyDetailSheetState extends State<_ReplyDetailSheet> {
   late Future<Result<List<Comment>>> _repliesFuture;
 
+  final _inputController = TextEditingController();
+  final _inputFocusNode = FocusNode();
+  bool _inputFocused = false;
+  bool _isSending = false;
+
   @override
   void initState() {
     super.initState();
-    _repliesFuture = context
+    _repliesFuture = _loadReplies();
+    _inputFocusNode.addListener(
+        () => setState(() => _inputFocused = _inputFocusNode.hasFocus));
+  }
+
+  @override
+  void dispose() {
+    _inputController.dispose();
+    _inputFocusNode.dispose();
+    super.dispose();
+  }
+
+  Future<Result<List<Comment>>> _loadReplies() =>
+      context.read<PostRepository>().getCommentReplies(widget.comment.id);
+
+  Future<void> _sendReply() async {
+    final content = _inputController.text.trim();
+    if (content.isEmpty) return;
+    setState(() => _isSending = true);
+
+    final result = await context
         .read<PostRepository>()
-        .getCommentReplies(widget.comment.id);
+        .createComment(widget.comment.id, content: content);
+
+    if (!mounted) return;
+    switch (result) {
+      case Ok<Comment>():{
+        _inputController.clear();
+        setState(() => _repliesFuture = _loadReplies());
+      }
+      case Error<Comment>():{
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('发送失败')),
+          );
+        }
+      }
+    }
+    if (mounted) setState(() => _isSending = false);
   }
 
   @override
@@ -133,15 +174,19 @@ class _ReplyDetailSheetState extends State<_ReplyDetailSheet> {
     return Container(
       decoration: BoxDecoration(
         color: cs.surface,
-        borderRadius:
-            const BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      child: Column(
+      child: Padding(
+        padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom),
+        child: GestureDetector(
+          onTap: () => FocusScope.of(context).unfocus(),
+          child: Column(
         children: [
           Container(
             height: 56,
             decoration: BoxDecoration(
-              color: cs.surfaceDim,
+              color: cs.surface,
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(24),
               ),
@@ -154,10 +199,7 @@ class _ReplyDetailSheetState extends State<_ReplyDetailSheet> {
                   child: Text(
                     '回复详情',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
                   ),
                 ),
                 IconButton(
@@ -168,20 +210,23 @@ class _ReplyDetailSheetState extends State<_ReplyDetailSheet> {
             ),
           ),
           Container(
-              width: double.infinity,
-              child: _ReplyDetailItem(
-                author: widget.comment.author,
-                content: widget.comment.content,
-                likesCount: widget.comment.likesCount,
-              ),
-            ),
+            width: double.infinity,
+            child: _ReplyDetailItem(comment: widget.comment),
+          ),
           const Divider(height: 1),
-          Expanded(
-            child: _buildReplyList(),
+          Expanded(child: _buildReplyList()),
+          CommentInput(
+            controller: _inputController,
+            focusNode: _inputFocusNode,
+            isFocused: _inputFocused,
+            isSending: _isSending,
+            onSend: _sendReply,
           ),
         ],
       ),
-    );
+    ),
+  ),
+  );
   }
 
   Widget _buildReplyList() {
@@ -192,19 +237,15 @@ class _ReplyDetailSheetState extends State<_ReplyDetailSheet> {
           return const Center(child: CircularProgressIndicator());
         }
         return switch (snapshot.data!) {
-          Ok<List<Comment>>(:final value) => value.isEmpty
-              ? const Center(child: Text('暂无回复'))
-              : ListView(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  children: value
-                      .map((r) => _ReplyDetailItem(
-                            replayToUser: r.replyToUser,
-                            author: r.author,
-                            content: r.content,
-                            likesCount: r.likesCount,
-                          ))
-                      .toList(),
-                ),
+          Ok<List<Comment>>(:final value) =>
+            value.isEmpty
+                ? const Center(child: Text('暂无回复'))
+                : ListView(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    children: value
+                        .map<Widget>((r) => _ReplyDetailItem(comment: r))
+                        .toList(),
+                  ),
           Error<List<Comment>>() => const Center(child: Text('加载失败')),
         };
       },
@@ -213,17 +254,9 @@ class _ReplyDetailSheetState extends State<_ReplyDetailSheet> {
 }
 
 class _ReplyDetailItem extends StatelessWidget {
-  final User author;
-  final User? replayToUser;
-  final String content;
-  final int likesCount;
+  final Comment comment;
 
-  const _ReplyDetailItem({
-    required this.author,
-    this.replayToUser,
-    required this.content,
-    required this.likesCount,
-  });
+  const _ReplyDetailItem({required this.comment});
 
   @override
   Widget build(BuildContext context) {
@@ -235,13 +268,10 @@ class _ReplyDetailItem extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           PostHeader(
-            user: author,
+            user: comment.author,
             subtitle: Text(
               'Time and Location',
-              style: TextStyle(
-                color: cs.onSurfaceVariant,
-                fontSize: 14,
-              ),
+              style: TextStyle(color: cs.onSurfaceVariant, fontSize: 14),
             ),
             trailing: const Icon(Icons.more_vert, size: 20),
           ),
@@ -251,23 +281,22 @@ class _ReplyDetailItem extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-              Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                if (replayToUser != null)  
-                  Text('回复：${replayToUser?.nickname}', style: 
-                        TextStyle(
-                          color: cs.secondary,
-                          fontSize: 14,
-                        ),
- ),
-                Text(content),
-              ]),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (comment.replyToUser != null)
+                      Text(
+                        '回复：${comment.replyToUser?.nickname}',
+                        style: TextStyle(color: cs.secondary, fontSize: 14),
+                      ),
+                    Text(comment.content),
+                  ],
+                ),
                 Row(
                   children: [
                     PostActionBtn(
                       icon: Icons.favorite_border,
-                      label: '$likesCount',
+                      label: '${comment.likesCount}',
                       onPressed: () {},
                     ),
                     const SizedBox(width: 12),
@@ -275,10 +304,7 @@ class _ReplyDetailItem extends StatelessWidget {
                       onTap: () {},
                       child: Text(
                         '回复',
-                        style: TextStyle(
-                          color: cs.primary,
-                          fontSize: 14,
-                        ),
+                        style: TextStyle(color: cs.primary, fontSize: 14),
                       ),
                     ),
                   ],

@@ -6,7 +6,6 @@ import '../../domain/models/notification.dart';
 import '../../utils/result.dart';
 import '../../utils/time.dart';
 import '../posts/post_card.dart';
-import '../user/user_detail_page.dart';
 
 /// Notifications page with tabs for replies, likes, and new followers.
 class NotificationPage extends StatelessWidget {
@@ -222,23 +221,17 @@ class _NotificationTile extends StatelessWidget {
         children: [
           PostHeader(
             user: item.fromUser,
-            onAvatarTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => UserDetailPage(user: item.fromUser),
-              ),
-            ),
             title: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
                   item.fromUser.nickname,
                   style: const TextStyle(fontWeight: FontWeight.w500),
                 ),
                 const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    _actionText(item.type),
-                    style: TextStyle(fontSize: 14, color: cs.onSurfaceVariant),
-                  ),
+                Text(
+                  _actionText(item.type),
+                  style: TextStyle(fontSize: 14, color: cs.onSurfaceVariant),
                 ),
               ],
             ),

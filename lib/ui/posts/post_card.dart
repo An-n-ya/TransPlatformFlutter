@@ -328,36 +328,40 @@ class PostHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return ListTile(
       minTileHeight: 56,
-      contentPadding: EdgeInsets.symmetric(horizontal: 12),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12),
       leading: GestureDetector(
         onTap: () => Navigator.of(
           context,
         ).push(MaterialPageRoute(builder: (_) => UserDetailPage(user: user))),
         child: ClipOval(child: _buildAvatar(context)),
       ),
-      title: GestureDetector(
-        onTap: () => Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (_) => UserDetailPage(user: user))),
-        child: Text(user.nickname),
-      ),
-      subtitle: Row(
-        children: [
-          if (createdAt != null) Text(formatRelativeTime(createdAt!)),
-          if (location != null) ...[
-            const SizedBox(width: 8),
-            Icon(
-              Icons.location_on,
-              size: 14,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+      title: title ??
+          GestureDetector(
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                  builder: (_) => UserDetailPage(user: user)),
             ),
-            const SizedBox(width: 2),
-            Text(location!, style: Theme.of(context).textTheme.bodySmall),
-          ],
-        ],
-      ),
+            child: Text(user.nickname),
+          ),
+      subtitle: subtitle ??
+          (createdAt != null
+              ? Row(
+                  children: [
+                    Text(formatRelativeTime(createdAt!)),
+                    if (location != null) ...[
+                      const SizedBox(width: 8),
+                      Icon(Icons.location_on,
+                          size: 14, color: cs.onSurfaceVariant),
+                      const SizedBox(width: 2),
+                      Text(location!,
+                          style: Theme.of(context).textTheme.bodySmall),
+                    ],
+                  ],
+                )
+              : null),
 
       trailing: trailing,
     );

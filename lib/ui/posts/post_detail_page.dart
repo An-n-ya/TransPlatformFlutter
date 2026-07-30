@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:trans_platform/ui/posts/comment.dart';
+import 'package:trans_platform/ui/posts/comment_input.dart';
 import 'package:trans_platform/ui/posts/interaction.dart';
 
 import '../../data/repositories/post/post_repository.dart';
