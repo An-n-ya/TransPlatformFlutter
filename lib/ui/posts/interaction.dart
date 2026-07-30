@@ -22,10 +22,14 @@ class PostActionBtn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    // FIXME: 这个TextButton内部的`_InputPadding`太大了，能否把这个Padding去掉？
-    // 如果不行，直接手写一个button也行
     return TextButton.icon(
-      style: TextButton.styleFrom(foregroundColor: color ?? cs.onSurface),
+      style: TextButton.styleFrom(
+        foregroundColor: color ?? cs.onSurface,
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        visualDensity: VisualDensity.compact,
+      ),
       onPressed: onPressed,
       icon: Icon(icon),
       label: Text(label),
@@ -41,6 +45,7 @@ class InteractionBar extends StatelessWidget {
   final int commentsCount;
   final VoidCallback onLike;
   final VoidCallback onCollect;
+  final VoidCallback onComment;
 
   const InteractionBar({
     required this.liked,
@@ -50,11 +55,15 @@ class InteractionBar extends StatelessWidget {
     required this.commentsCount,
     required this.onLike,
     required this.onCollect,
+    required this.onComment,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return  Padding(
+    padding: EdgeInsetsGeometry.symmetric(horizontal: 12, vertical: 12),
+      child:
+    Row(
       children: [
         PostActionBtn(
           icon: liked ? Icons.favorite : Icons.favorite_border,
@@ -66,7 +75,7 @@ class InteractionBar extends StatelessWidget {
         PostActionBtn(
           icon: Icons.mode_comment_outlined,
           label: '$commentsCount',
-          onPressed: () {},
+          onPressed: onComment
         ),
         const SizedBox(width: 8),
         PostActionBtn(
@@ -76,6 +85,7 @@ class InteractionBar extends StatelessWidget {
           onPressed: onCollect,
         ),
       ],
+    )
     );
   }
 }

@@ -57,8 +57,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
   }
 
   void _loadCurrentUser() {
-    _currentUserId =
-        context.read<CurrentUserProvider>().userId;
+    _currentUserId = context.read<CurrentUserProvider>().userId;
   }
 
   Future<Result<List<Comment>>> _loadComments() =>
@@ -234,18 +233,19 @@ class _PostDetailPageState extends State<PostDetailPage> {
                         ),
                       ),
                     ),
-                    PostContent(content: widget.post.content, images: widget.post.images),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: InteractionBar(
-                        liked: _liked,
-                        collected: _collected,
-                        likesCount: _likesCount,
-                        collectionsCount: _collectionsCount,
-                        commentsCount: widget.post.commentsCount,
-                        onLike: _toggleLike,
-                        onCollect: _toggleCollect,
-                      ),
+                    PostContent(
+                      content: widget.post.content,
+                      images: widget.post.images,
+                    ),
+                    InteractionBar(
+                      liked: _liked,
+                      collected: _collected,
+                      likesCount: _likesCount,
+                      collectionsCount: _collectionsCount,
+                      commentsCount: widget.post.commentsCount,
+                      onLike: _toggleLike,
+                      onCollect: _toggleCollect,
+                      onComment: () => {},
                     ),
                     const Divider(height: 24),
                     _buildCommentsSection(),
@@ -303,7 +303,3 @@ class _PostDetailPageState extends State<PostDetailPage> {
     );
   }
 }
-
-
-
-

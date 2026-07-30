@@ -71,6 +71,12 @@ class TopReply extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
               IconButton(
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  visualDensity: VisualDensity.compact,
+                ),
                 color: Theme.of(context).colorScheme.primary,
                 icon: const Icon(Icons.mode_comment_outlined, size: 16),
                 constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
@@ -128,7 +134,8 @@ class _ReplyDetailSheetState extends State<_ReplyDetailSheet> {
     super.initState();
     _repliesFuture = _loadReplies();
     _inputFocusNode.addListener(
-        () => setState(() => _inputFocused = _inputFocusNode.hasFocus));
+      () => setState(() => _inputFocused = _inputFocusNode.hasFocus),
+    );
   }
 
   @override
@@ -146,23 +153,26 @@ class _ReplyDetailSheetState extends State<_ReplyDetailSheet> {
     if (content.isEmpty) return;
     setState(() => _isSending = true);
 
-    final result = await context
-        .read<PostRepository>()
-        .createComment(widget.comment.id, content: content);
+    final result = await context.read<PostRepository>().createComment(
+      widget.comment.id,
+      content: content,
+    );
 
     if (!mounted) return;
     switch (result) {
-      case Ok<Comment>():{
-        _inputController.clear();
-        setState(() => _repliesFuture = _loadReplies());
-      }
-      case Error<Comment>():{
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('发送失败')),
-          );
+      case Ok<Comment>():
+        {
+          _inputController.clear();
+          setState(() => _repliesFuture = _loadReplies());
         }
-      }
+      case Error<Comment>():
+        {
+          if (mounted) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(const SnackBar(content: Text('发送失败')));
+          }
+        }
     }
     if (mounted) setState(() => _isSending = false);
   }
@@ -178,55 +188,59 @@ class _ReplyDetailSheetState extends State<_ReplyDetailSheet> {
       ),
       child: Padding(
         padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom),
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
         child: GestureDetector(
           onTap: () => FocusScope.of(context).unfocus(),
           child: Column(
-        children: [
-          Container(
-            height: 56,
-            decoration: BoxDecoration(
-              color: cs.surface,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(24),
-              ),
-            ),
-            padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
-            child: Row(
-              children: [
-                const SizedBox(width: 48),
-                const Expanded(
-                  child: Text(
-                    '回复详情',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+            children: [
+              Container(
+                height: 56,
+                decoration: BoxDecoration(
+                  color: cs.surface,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(24),
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.of(context).pop(),
+                padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
+                child: Row(
+                  children: [
+                    const SizedBox(width: 48),
+                    const Expanded(
+                      child: Text(
+                        '回复详情',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              Container(
+                width: double.infinity,
+                child: _ReplyDetailItem(comment: widget.comment),
+              ),
+              const Divider(height: 1),
+              Expanded(child: _buildReplyList()),
+              CommentInput(
+                controller: _inputController,
+                focusNode: _inputFocusNode,
+                isFocused: _inputFocused,
+                isSending: _isSending,
+                onSend: _sendReply,
+              ),
+            ],
           ),
-          Container(
-            width: double.infinity,
-            child: _ReplyDetailItem(comment: widget.comment),
-          ),
-          const Divider(height: 1),
-          Expanded(child: _buildReplyList()),
-          CommentInput(
-            controller: _inputController,
-            focusNode: _inputFocusNode,
-            isFocused: _inputFocused,
-            isSending: _isSending,
-            onSend: _sendReply,
-          ),
-        ],
+        ),
       ),
-    ),
-  ),
-  );
+    );
   }
 
   Widget _buildReplyList() {

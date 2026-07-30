@@ -231,30 +231,19 @@ class _PostCardState extends State<PostCard> {
           PostContent(content: widget.post.content, images: widget.post.images),
 
           // ── Action buttons ──
-          Row(
-            children: [
-              PostActionBtn(
-                icon: _liked ? Icons.favorite : Icons.favorite_border,
-                label: '$_likesCount',
-                color: _liked ? Colors.red : null,
-                onPressed: _toggleLike,
+          InteractionBar(
+            liked: _liked,
+            collected: _collected,
+            likesCount: _likesCount,
+            collectionsCount: _collectionsCount,
+            commentsCount: widget.post.commentsCount,
+            onLike: _toggleLike,
+            onCollect: _toggleCollect,
+            onComment: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => PostDetailPage(post: widget.post),
               ),
-              PostActionBtn(
-                icon: Icons.mode_comment_outlined,
-                label: '${widget.post.commentsCount}',
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => PostDetailPage(post: widget.post),
-                  ),
-                ),
-              ),
-              PostActionBtn(
-                icon: _collected ? Icons.bookmark : Icons.bookmark_border,
-                label: '$_collectionsCount',
-                color: _collected ? Colors.amber : null,
-                onPressed: _toggleCollect,
-              ),
-            ],
+            ),
           ),
         ],
       ),
@@ -338,26 +327,32 @@ class PostHeader extends StatelessWidget {
         ).push(MaterialPageRoute(builder: (_) => UserDetailPage(user: user))),
         child: ClipOval(child: _buildAvatar(context)),
       ),
-      title: title ??
+      title:
+          title ??
           GestureDetector(
             onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                  builder: (_) => UserDetailPage(user: user)),
+              MaterialPageRoute(builder: (_) => UserDetailPage(user: user)),
             ),
             child: Text(user.nickname),
           ),
-      subtitle: subtitle ??
+      subtitle:
+          subtitle ??
           (createdAt != null
               ? Row(
                   children: [
                     Text(formatRelativeTime(createdAt!)),
                     if (location != null) ...[
                       const SizedBox(width: 8),
-                      Icon(Icons.location_on,
-                          size: 14, color: cs.onSurfaceVariant),
+                      Icon(
+                        Icons.location_on,
+                        size: 14,
+                        color: cs.onSurfaceVariant,
+                      ),
                       const SizedBox(width: 2),
-                      Text(location!,
-                          style: Theme.of(context).textTheme.bodySmall),
+                      Text(
+                        location!,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
                     ],
                   ],
                 )
@@ -393,34 +388,29 @@ class PostHeader extends StatelessWidget {
   }
 }
 
-
 class PostContent extends StatelessWidget {
   final String? content;
   final List<String>? images;
-  const PostContent({
-    super.key,
-    this.content,
-    this.images,
-  });
-  
+  const PostContent({super.key, this.content, this.images});
+
   @override
   Widget build(BuildContext context) {
-          return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (content != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text(content!),
+          ),
+        if (images != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: PhotoGrid(images: images!),
+          ),
+      ],
+    );
 
-          if (content != null)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(content!),
-            ),
-          if (images != null)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: PhotoGrid(images: images!),
-            ),
-          ]);
-
-          // ── Images ──
+    // ── Images ──
   }
 }
