@@ -1,33 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import '../../domain/models/user.dart';
+import '../../data/repositories/notification/notification_repository.dart';
+import '../../domain/models/notification.dart';
+import '../../utils/result.dart';
 import '../../utils/time.dart';
 import '../posts/post_card.dart';
 import '../user/user_detail_page.dart';
-
-/// Types of notifications shown in the messages page.
-enum NotificationType { reply, like, follow }
-
-/// A notification item displayed in one of the tabs.
-class NotificationItem {
-  final int id;
-  final NotificationType type;
-  final User user;
-  final String actionText;
-  final String? content;
-  final DateTime createdAt;
-  final bool isFollowing;
-
-  const NotificationItem({
-    required this.id,
-    required this.type,
-    required this.user,
-    required this.actionText,
-    this.content,
-    required this.createdAt,
-    this.isFollowing = false,
-  });
-}
 
 /// Notifications page with tabs for replies, likes, and new followers.
 class NotificationPage extends StatelessWidget {
@@ -47,20 +26,18 @@ class NotificationPage extends StatelessWidget {
           actions: [
             IconButton(
               icon: const Icon(Icons.delete_outline),
-              onPressed: () {},
+              onPressed: () =>
+                  context.read<NotificationRepository>().markAllAsRead(),
             ),
           ],
           bottom: const _NotificationTabBar(),
         ),
-        body: const TabBarView(
-          children: [_ReplyList(), _LikeList(), _FollowList()],
-        ),
+        body: const _NotificationTabs(),
       ),
     );
   }
 }
 
-/// Custom tab bar with a badge dot on the replies tab.
 class _NotificationTabBar extends StatelessWidget
     implements PreferredSizeWidget {
   const _NotificationTabBar();
@@ -68,32 +45,72 @@ class _NotificationTabBar extends StatelessWidget
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return TabBar(
-      labelColor: cs.primary,
-      unselectedLabelColor: cs.onSurfaceVariant,
-      indicatorColor: cs.primary,
-      indicatorWeight: 3,
-      tabs: [
-        Tab(
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('回复'),
-              const SizedBox(width: 4),
-              Container(
-                width: 6,
-                height: 6,
-                decoration: BoxDecoration(
-                  color: cs.error,
-                  shape: BoxShape.circle,
-                ),
+    return FutureBuilder<Result<List<AppNotification>>>(
+      future: context.read<NotificationRepository>().getNotifications(),
+      builder: (_, snapshot) {
+        final notifications = switch (snapshot.data) {
+          Ok<List<AppNotification>>(:final value) => value,
+          _ => <AppNotification>[],
+        };
+
+        final replyUnread = notifications
+            .where((n) =>
+                (n.type == 'comment' || n.type == 'reply') && !n.isRead)
+            .length;
+        final likeUnread = notifications
+            .where((n) =>
+                (n.type == 'post_like' || n.type == 'collection') &&
+                !n.isRead)
+            .length;
+        final followUnread = notifications
+            .where((n) => n.type == 'follow' && !n.isRead)
+            .length;
+
+        return TabBar(
+          labelColor: cs.primary,
+          unselectedLabelColor: cs.onSurfaceVariant,
+          indicatorColor: cs.primary,
+          indicatorWeight: 3,
+          tabs: [
+            Tab(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('回复'),
+                  if (replyUnread > 0) ...[
+                    const SizedBox(width: 4),
+                    const _UnreadDot(),
+                  ],
+                ],
               ),
-            ],
-          ),
-        ),
-        const Tab(text: '收到喜欢'),
-        const Tab(text: '新增关注'),
-      ],
+            ),
+            Tab(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('收到喜欢'),
+                  if (likeUnread > 0) ...[
+                    const SizedBox(width: 4),
+                    const _UnreadDot(),
+                  ],
+                ],
+              ),
+            ),
+            Tab(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('新增关注'),
+                  if (followUnread > 0) ...[
+                    const SizedBox(width: 4),
+                    const _UnreadDot(),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -101,48 +118,96 @@ class _NotificationTabBar extends StatelessWidget
   Size get preferredSize => const Size.fromHeight(48);
 }
 
-class _ReplyList extends StatelessWidget {
-  const _ReplyList();
+/// Shared tab body that loads notifications and filters by type.
+class _NotificationTabs extends StatefulWidget {
+  const _NotificationTabs();
+
+  @override
+  State<_NotificationTabs> createState() => _NotificationTabsState();
+}
+
+class _NotificationTabsState extends State<_NotificationTabs> {
+  late Future<Result<List<AppNotification>>> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = context.read<NotificationRepository>().getNotifications();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      itemCount: _mockReplies.length,
-      itemBuilder: (_, i) => _NotificationTile(item: _mockReplies[i]),
+    return FutureBuilder<Result<List<AppNotification>>>(
+      future: _future,
+      builder: (_, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        return switch (snapshot.data!) {
+          Ok<List<AppNotification>>(:final value) => TabBarView(
+            children: [
+              _NotificationList(
+                notifications: value
+                    .where((n) => n.type == 'comment' || n.type == 'reply')
+                    .toList(),
+              ),
+              _NotificationList(
+                notifications: value
+                    .where(
+                      (n) => n.type == 'post_like' || n.type == 'collection',
+                    )
+                    .toList(),
+              ),
+              _NotificationList(
+                notifications: value.where((n) => n.type == 'follow').toList(),
+              ),
+            ],
+          ),
+          Error<List<AppNotification>>() => Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                const SizedBox(height: 16),
+                Text('加载失败', style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 16),
+                FilledButton.tonal(
+                  onPressed: () => setState(() {
+                    _future = context
+                        .read<NotificationRepository>()
+                        .getNotifications();
+                  }),
+                  child: const Text('重试'),
+                ),
+              ],
+            ),
+          ),
+        };
+      },
     );
   }
 }
 
-class _LikeList extends StatelessWidget {
-  const _LikeList();
+class _NotificationList extends StatelessWidget {
+  final List<AppNotification> notifications;
+
+  const _NotificationList({required this.notifications});
 
   @override
   Widget build(BuildContext context) {
+    if (notifications.isEmpty) {
+      return const Center(child: Text('暂无消息'));
+    }
     return ListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 12),
-      itemCount: _mockLikes.length,
-      itemBuilder: (_, i) => _NotificationTile(item: _mockLikes[i]),
+      itemCount: notifications.length,
+      itemBuilder: (_, i) => _NotificationTile(item: notifications[i]),
     );
   }
 }
 
-class _FollowList extends StatelessWidget {
-  const _FollowList();
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      itemCount: _mockFollows.length,
-      itemBuilder: (_, i) => _NotificationTile(item: _mockFollows[i]),
-    );
-  }
-}
-
-/// Single notification row reusing [PostHeader].
 class _NotificationTile extends StatelessWidget {
-  final NotificationItem item;
+  final AppNotification item;
 
   const _NotificationTile({required this.item});
 
@@ -153,24 +218,25 @@ class _NotificationTile extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 6),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           PostHeader(
-            user: item.user,
+            user: item.fromUser,
             onAvatarTap: () => Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (_) => UserDetailPage(user: item.user),
+                builder: (_) => UserDetailPage(user: item.fromUser),
               ),
             ),
             title: Row(
               children: [
                 Text(
-                  item.user.nickname,
+                  item.fromUser.nickname,
                   style: const TextStyle(fontWeight: FontWeight.w500),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    item.actionText,
+                    _actionText(item.type),
                     style: TextStyle(fontSize: 14, color: cs.onSurfaceVariant),
                   ),
                 ),
@@ -180,15 +246,23 @@ class _NotificationTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 2),
-                Text(
-                  formatRelativeTime(item.createdAt),
-                  style: TextStyle(fontSize: 14, color: cs.onSurfaceVariant),
+                Row(
+                  children: [
+                    if (!item.isRead) ...[
+                      const Padding(
+                        padding: EdgeInsets.only(right: 6),
+                        child: _UnreadDot(),
+                      ),
+                    ],
+                    Text(
+                      formatRelativeTime(item.createdAt),
+                      style: TextStyle(fontSize: 14, color: cs.onSurfaceVariant),
+                    ),
+                  ],
                 ),
               ],
             ),
-            trailing: item.type == NotificationType.follow
-                ? _FollowButton(isFollowing: item.isFollowing)
-                : null,
+            trailing: item.type == 'follow' ? _FollowButton() : null,
           ),
           if (item.content != null) ...[
             Padding(
@@ -203,90 +277,48 @@ class _NotificationTile extends StatelessWidget {
       ),
     );
   }
-}
 
-/// Follow / unfollow button used in the new followers tab.
-class _FollowButton extends StatelessWidget {
-  final bool isFollowing;
-
-  const _FollowButton({required this.isFollowing});
-
-  @override
-  Widget build(BuildContext context) {
-    return isFollowing
-        ? FilledButton.tonal(
-            onPressed: () {},
-            style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(100),
-              ),
-            ),
-            child: const Text('取关'),
-          )
-        : FilledButton(
-            onPressed: () {},
-            style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(100),
-              ),
-            ),
-            child: const Text('回关'),
-          );
+  String _actionText(String type) {
+    return switch (type) {
+      'reply' => '回复了我的评论',
+      'comment' => '评论了我的贴文',
+      'post_like' => '喜欢了我的贴文',
+      'collection' => '收藏了我的贴文',
+      'follow' => '关注了我',
+      _ => type,
+    };
   }
 }
 
-final _mockUser = const User(id: 1, username: 'user', nickname: 'User Name');
+/// A small red dot indicating unread status.
+class _UnreadDot extends StatelessWidget {
+  const _UnreadDot();
 
-final _mockReplies = [
-  NotificationItem(
-    id: 1,
-    type: NotificationType.reply,
-    user: _mockUser,
-    actionText: '回复了我的贴文',
-    content:
-        'Maecenas egestas nulla vel vulputate consequat. Nam aliquet nisl pretium, venenatis sapien a, malesuada mauris. Suspendisse bibendum ut turpis vitae elementum.',
-    createdAt: DateTime.now().subtract(const Duration(days: 3)),
-  ),
-  NotificationItem(
-    id: 2,
-    type: NotificationType.reply,
-    user: _mockUser,
-    actionText: '回复了我的贴文',
-    content:
-        'Maecenas egestas nulla vel vulputate consequat. Nam aliquet nisl pretium, venenatis sapien a, malesuada mauris. Suspendisse bibendum ut turpis vitae elementum.',
-    createdAt: DateTime.now().subtract(const Duration(days: 3)),
-  ),
-];
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 6,
+      height: 6,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.error,
+        shape: BoxShape.circle,
+      ),
+    );
+  }
+}
 
-final _mockLikes = [
-  NotificationItem(
-    id: 3,
-    type: NotificationType.like,
-    user: _mockUser,
-    actionText: '喜欢了我的贴文',
-    content:
-        'Maecenas egestas nulla vel vulputate consequat. Nam aliquet nisl pretium, venenatis sapien a, malesuada mauris.',
-    createdAt: DateTime.now().subtract(const Duration(days: 2)),
-  ),
-];
+class _FollowButton extends StatelessWidget {
+  const _FollowButton();
 
-final _mockFollows = [
-  NotificationItem(
-    id: 4,
-    type: NotificationType.follow,
-    user: _mockUser,
-    actionText: '关注了我',
-    createdAt: DateTime.now().subtract(const Duration(days: 3)),
-    isFollowing: true,
-  ),
-  NotificationItem(
-    id: 5,
-    type: NotificationType.follow,
-    user: _mockUser,
-    actionText: '关注了我',
-    createdAt: DateTime.now().subtract(const Duration(days: 3)),
-    isFollowing: false,
-  ),
-];
+  @override
+  Widget build(BuildContext context) {
+    return FilledButton(
+      onPressed: () {},
+      style: FilledButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+      ),
+      child: const Text('回关'),
+    );
+  }
+}

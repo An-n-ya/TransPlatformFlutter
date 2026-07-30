@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../../data/repositories/notification/notification_repository.dart';
+import '../../utils/result.dart';
 
 import '../settings/settings_page.dart';
 import '../notification/notification_page.dart';
@@ -31,11 +35,29 @@ class HomePage extends StatelessWidget {
             onPressed: () {},
           ),
           actions: <Widget>[
-            IconButton(
-              icon: const Icon(Icons.notifications),
-              onPressed: () => Navigator.of(
-                context,
-              ).push(MaterialPageRoute(builder: (_) => const NotificationPage())),
+            FutureBuilder<Result<int>>(
+              future: context.read<NotificationRepository>().getUnreadCount(),
+              builder: (_, snapshot) {
+                final unread = switch (snapshot.data) {
+                  Ok<int>(:final value) => value,
+                  _ => 0,
+                };
+                return IconButton(
+                  icon: unread > 0
+                      ? Badge(
+                          label: Text(
+                            unread > 99 ? '99+' : '$unread',
+                            style: const TextStyle(fontSize: 10),
+                          ),
+                          child: const Icon(Icons.notifications),
+                        )
+                      : const Icon(Icons.notifications),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                        builder: (_) => const NotificationPage()),
+                  ),
+                );
+              },
             ),
             IconButton(
               icon: const Icon(Icons.settings),
