@@ -50,6 +50,9 @@ dependencies:
   # Image picker
   image_picker: ^1.1.2
 
+  # Easy image viewer
+  easy_image_viewer: ^1.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

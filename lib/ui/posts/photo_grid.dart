@@ -1,3 +1,4 @@
+import 'package:easy_image_viewer/easy_image_viewer.dart';
 import 'package:flutter/material.dart';
 
 class PhotoGrid extends StatelessWidget {
@@ -20,11 +21,28 @@ class PhotoGrid extends StatelessWidget {
       ),
       itemCount: images.length,
       itemBuilder: (context, index) {
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(10),
-          child: _buildImage(images[index]),
+        return GestureDetector(
+          onTap: () => _openViewer(context, index),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: _buildImage(images[index]),
+          ),
         );
       },
+    );
+  }
+
+  void _openViewer(BuildContext context, int index) {
+    final providers = images.map<ImageProvider>((url) {
+      if (url.startsWith('http')) return NetworkImage(url);
+      return AssetImage(url);
+    }).toList();
+
+    showImageViewerPager(
+      context,
+      MultiImageProvider(providers, initialIndex: index),
+      swipeDismissible: true,
+      doubleTapZoomable: true,
     );
   }
 

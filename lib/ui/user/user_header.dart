@@ -1,3 +1,4 @@
+import 'package:easy_image_viewer/easy_image_viewer.dart';
 import 'package:flutter/material.dart';
 
 import '../../domain/models/user.dart';
@@ -159,7 +160,14 @@ class UserAvatar extends StatelessWidget {
           : AssetImage(avatarUrl) as ImageProvider;
     }
 
-    return CircleAvatar(
+    return GestureDetector(
+      onTap: () {
+        if (image != null) {
+          showImageViewer(context, image,
+              swipeDismissible: true, doubleTapZoomable: true);
+        }
+      },
+      child: CircleAvatar(
       radius: 40,
       backgroundColor: cs.primaryContainer,
       backgroundImage: image,
@@ -175,6 +183,7 @@ class UserAvatar extends StatelessWidget {
               ),
             )
           : null,
+      ),
     );
   }
 }
