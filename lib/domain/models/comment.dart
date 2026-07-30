@@ -1,8 +1,6 @@
 import 'user.dart';
 
 /// A top-level reply preview attached to a comment.
-///
-/// Matches the backend response from `/api/v1/posts/{{postId}}/comments`.
 class TopReply {
   final int id;
   final int userId;
@@ -38,21 +36,6 @@ class TopReply {
 }
 
 /// Comment view object matching backend [CommentVO].
-///
-/// ```json
-/// {
-///   "id": 1,
-///   "postId": 1,
-///   "author": { ... },
-///   "parentId": null,
-///   "replyToUser": null,
-///   "content": "Great!",
-///   "likesCount": 5,
-///   "replies": [],
-///   "topReply": null,
-///   "createdAt": "2024-01-15T10:30:00"
-/// }
-/// ```
 class Comment {
   final int id;
   final int postId;
@@ -61,7 +44,7 @@ class Comment {
   final User? replyToUser;
   final String content;
   final int likesCount;
-  final List<Comment> replies;
+  final int commentsCount;
   final TopReply? topReply;
   final DateTime createdAt;
 
@@ -73,7 +56,7 @@ class Comment {
     this.replyToUser,
     required this.content,
     this.likesCount = 0,
-    this.replies = const [],
+    this.commentsCount = 0,
     this.topReply,
     required this.createdAt,
   });
@@ -89,10 +72,7 @@ class Comment {
           : null,
       content: json['content'] as String? ?? '',
       likesCount: json['likesCount'] as int? ?? 0,
-      replies: (json['replies'] as List<dynamic>?)
-              ?.map((e) => Comment.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [],
+      commentsCount: json['commentsCount'] as int? ?? 0,
       topReply: json['topReply'] != null
           ? TopReply.fromJson(json['topReply'] as Map<String, dynamic>)
           : null,
@@ -109,7 +89,6 @@ class Comment {
         'replyToUser': replyToUser?.toJson(),
         'content': content,
         'likesCount': likesCount,
-        'replies': replies.map((r) => r.toJson()).toList(),
         'topReply': topReply?.toJson(),
         'createdAt': createdAt.toIso8601String(),
       };

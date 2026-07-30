@@ -63,6 +63,10 @@ abstract class PostRepository {
   /// Unlike a comment.
   Future<Result<void>> unlikeComment(int commentId);
 
+  /// Get replies for a comment (paginated).
+  Future<Result<List<Comment>>> getCommentReplies(int commentId,
+      {int page = 0, int size = 20});
+
   /// Collect a post.
   Future<Result<void>> collectPost(int postId);
 

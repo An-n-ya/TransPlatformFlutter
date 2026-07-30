@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:trans_platform/ui/posts/interaction.dart';
 
 import '../../data/repositories/post/post_repository.dart';
 import '../../domain/models/post.dart';
@@ -191,9 +192,6 @@ class _PostCardState extends State<PostCard> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: Column(
@@ -202,30 +200,8 @@ class _PostCardState extends State<PostCard> {
           // ── Header ──
           PostHeader(
             user: widget.post.author,
-            onAvatarTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => UserDetailPage(user: widget.post.author),
-              ),
-            ),
-            title: GestureDetector(
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => UserDetailPage(user: widget.post.author),
-                ),
-              ),
-              child: Text(widget.post.author.nickname),
-            ),
-            subtitle: Row(
-              children: [
-                Text(formatRelativeTime(widget.post.createdAt)),
-                if (widget.post.location != null) ...[
-                  const SizedBox(width: 8),
-                  Icon(Icons.location_on, size: 14, color: cs.onSurfaceVariant),
-                  const SizedBox(width: 2),
-                  Text(widget.post.location!, style: theme.textTheme.bodySmall),
-                ],
-              ],
-            ),
+            createdAt: widget.post.createdAt,
+            location: widget.post.location,
             trailing: widget.isMe
                 ? PopupMenuButton<String>(
                     icon: const Icon(Icons.more_vert),
@@ -252,19 +228,7 @@ class _PostCardState extends State<PostCard> {
                 : const Icon(Icons.more_vert),
           ),
 
-          // ── Content ──
-          if (widget.post.content.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(widget.post.content),
-            ),
-
-          // ── Images ──
-          if (widget.post.images.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: PhotoGrid(images: widget.post.images),
-            ),
+          PostContent(content: widget.post.content, images: widget.post.images),
 
           // ── Action buttons ──
           Row(
@@ -347,6 +311,8 @@ class PostHeader extends StatelessWidget {
   final Widget? title;
   final Widget? subtitle;
   final Widget? trailing;
+  final DateTime? createdAt;
+  final String? location;
   final VoidCallback? onAvatarTap;
 
   const PostHeader({
@@ -355,19 +321,44 @@ class PostHeader extends StatelessWidget {
     this.title,
     this.subtitle,
     this.trailing,
+    this.createdAt,
+    this.location,
     this.onAvatarTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      contentPadding: EdgeInsets.symmetric(horizontal: 16),
+      minTileHeight: 56,
+      contentPadding: EdgeInsets.symmetric(horizontal: 12),
       leading: GestureDetector(
-        onTap: onAvatarTap,
+        onTap: () => Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => UserDetailPage(user: user))),
         child: ClipOval(child: _buildAvatar(context)),
       ),
-      title: title ?? Text(user.nickname),
-      subtitle: subtitle,
+      title: GestureDetector(
+        onTap: () => Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => UserDetailPage(user: user))),
+        child: Text(user.nickname),
+      ),
+      subtitle: Row(
+        children: [
+          if (createdAt != null) Text(formatRelativeTime(createdAt!)),
+          if (location != null) ...[
+            const SizedBox(width: 8),
+            Icon(
+              Icons.location_on,
+              size: 14,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 2),
+            Text(location!, style: Theme.of(context).textTheme.bodySmall),
+          ],
+        ],
+      ),
+
       trailing: trailing,
     );
   }
@@ -398,29 +389,34 @@ class PostHeader extends StatelessWidget {
   }
 }
 
-/// Small helper for like / comment / collect buttons.
-class PostActionBtn extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color? color;
-  final VoidCallback onPressed;
 
-  const PostActionBtn({
+class PostContent extends StatelessWidget {
+  final String? content;
+  final List<String>? images;
+  const PostContent({
     super.key,
-    required this.icon,
-    required this.label,
-    this.color,
-    required this.onPressed,
+    this.content,
+    this.images,
   });
-
+  
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return TextButton.icon(
-      style: TextButton.styleFrom(foregroundColor: color ?? cs.onSurface),
-      onPressed: onPressed,
-      icon: Icon(icon),
-      label: Text(label),
-    );
+          return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+
+          if (content != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(content!),
+            ),
+          if (images != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: PhotoGrid(images: images!),
+            ),
+          ]);
+
+          // ── Images ──
   }
 }

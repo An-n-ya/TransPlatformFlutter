@@ -175,6 +175,25 @@ class PostRepositoryRemote implements PostRepository {
   }
 
   @override
+  Future<Result<List<Comment>>> getCommentReplies(int commentId,
+      {int page = 0, int size = 20}) async {
+    final result = await _api.getPage<Comment>(
+      '/api/v1/comments/$commentId/replies',
+      queryParams: {
+        'page': page.toString(),
+        'size': size.toString(),
+      },
+      fromItem: (data) => Comment.fromJson(data as Map<String, dynamic>),
+    );
+    switch (result) {
+      case Ok<PageResult<Comment>>():
+        return Result.ok(result.value.content);
+      case Error<PageResult<Comment>>():
+        return Result.error(result.error);
+    }
+  }
+
+  @override
   Future<Result<void>> collectPost(int postId) async {
     return _api.post<void>('/api/v1/posts/$postId/collect');
   }

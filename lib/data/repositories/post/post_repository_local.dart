@@ -124,6 +124,13 @@ class PostRepositoryLocal implements PostRepository {
   }
 
   @override
+  Future<Result<List<Comment>>> getCommentReplies(int commentId,
+      {int page = 0, int size = 20}) async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    return Result.ok([]);
+  }
+
+  @override
   Future<Result<void>> collectPost(int postId) async {
     await Future.delayed(const Duration(milliseconds: 100));
     return Result.ok(null);
