@@ -244,9 +244,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
                             Icon(
                               Icons.location_on,
                               size: 14,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurfaceVariant,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
                             ),
                             const SizedBox(width: 2),
                             Text(
@@ -258,49 +258,50 @@ class _PostDetailPageState extends State<PostDetailPage> {
                       ),
                       trailing: FilledButton.icon(
                         onPressed: () {},
-                        icon:
-                            const Icon(Icons.notifications_none, size: 18),
-                        label: const Text('Follow'),
+                        icon: const Icon(Icons.notifications_none, size: 18),
+                        label: const Text('关注'),
                         style: FilledButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(100),
                           ),
                         ),
                       ),
                     ),
-                  if (widget.post.content.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
+                    if (widget.post.content.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        child: Text(widget.post.content),
                       ),
-                      child: Text(widget.post.content),
-                    ),
-                  if (widget.post.images.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
+                    if (widget.post.images.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        child: PhotoGrid(images: widget.post.images),
                       ),
-                      child: PhotoGrid(images: widget.post.images),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: _InteractionBar(
+                        liked: _liked,
+                        collected: _collected,
+                        likesCount: _likesCount,
+                        collectionsCount: _collectionsCount,
+                        commentsCount: widget.post.commentsCount,
+                        onLike: _toggleLike,
+                        onCollect: _toggleCollect,
+                      ),
                     ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: _InteractionBar(
-                      liked: _liked,
-                      collected: _collected,
-                      likesCount: _likesCount,
-                      collectionsCount: _collectionsCount,
-                      commentsCount: widget.post.commentsCount,
-                      onLike: _toggleLike,
-                      onCollect: _toggleCollect,
-                    ),
-                  ),
-                  const Divider(height: 24),
-                  _buildCommentsSection(),
-                ],
+                    const Divider(height: 24),
+                    _buildCommentsSection(),
+                  ],
                 ),
               ),
             ),
@@ -321,6 +322,15 @@ class _PostDetailPageState extends State<PostDetailPage> {
     return FutureBuilder<Result<List<Comment>>>(
       future: _commentsFuture,
       builder: (_, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Text('加载评论失败: ${snapshot.error}'),
+          );
+        }
         if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
@@ -336,9 +346,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
                     currentUserId: _currentUserId,
                     onDeleteRequested: (id) => _deleteComment(id),
                   ),
-          Error<List<Comment>>() => const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 12),
-            child: Text('加载评论失败'),
+          Error<List<Comment>>(:final error) => Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Text('加载评论失败: $error'),
           ),
         };
       },
@@ -430,11 +440,7 @@ class _CommentTile extends StatefulWidget {
   final bool isMe;
   final VoidCallback? onDelete;
 
-  const _CommentTile({
-    required this.comment,
-    this.isMe = false,
-    this.onDelete,
-  });
+  const _CommentTile({required this.comment, this.isMe = false, this.onDelete});
 
   @override
   State<_CommentTile> createState() => _CommentTileState();
@@ -458,19 +464,21 @@ class _CommentTileState extends State<_CommentTile> {
         : await repo.likeComment(widget.comment.id);
     if (!mounted) return;
     switch (result) {
-      case Ok<void>():{
-        setState(() {
-          _liked = !_liked;
-          _likesCount += _liked ? 1 : -1;
-        });
-      }
-      case Error<void>():{
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('操作失败')),
-          );
+      case Ok<void>():
+        {
+          setState(() {
+            _liked = !_liked;
+            _likesCount += _liked ? 1 : -1;
+          });
         }
-      }
+      case Error<void>():
+        {
+          if (mounted) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(const SnackBar(content: Text('操作失败')));
+          }
+        }
     }
   }
 
@@ -483,15 +491,13 @@ class _CommentTileState extends State<_CommentTile> {
           user: widget.comment.author,
           onAvatarTap: () => Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (_) =>
-                  UserDetailPage(user: widget.comment.author),
+              builder: (_) => UserDetailPage(user: widget.comment.author),
             ),
           ),
           title: GestureDetector(
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (_) =>
-                    UserDetailPage(user: widget.comment.author),
+                builder: (_) => UserDetailPage(user: widget.comment.author),
               ),
             ),
             child: Text(widget.comment.author.nickname),
@@ -515,8 +521,11 @@ class _CommentTileState extends State<_CommentTile> {
                       value: 'delete',
                       child: Row(
                         children: [
-                          Icon(Icons.delete_outline,
-                              size: 20, color: Colors.red),
+                          Icon(
+                            Icons.delete_outline,
+                            size: 20,
+                            color: Colors.red,
+                          ),
                           SizedBox(width: 8),
                           Text('删除', style: TextStyle(color: Colors.red)),
                         ],
@@ -531,17 +540,109 @@ class _CommentTileState extends State<_CommentTile> {
           padding: const EdgeInsets.only(left: 72),
           child: Text(widget.comment.content),
         ),
+        if (widget.comment.topReply != null)
+          Padding(
+            padding: const EdgeInsets.only(left: 72, top: 8, right: 16),
+            child: _TopReply(reply: widget.comment.topReply!),
+          ),
         const SizedBox(height: 8),
         Padding(
           padding: const EdgeInsets.only(left: 60),
-          child: PostActionBtn(
-            icon: _liked ? Icons.favorite : Icons.favorite_border,
-            label: '$_likesCount',
-            color: _liked ? Colors.red : null,
-            onPressed: _toggleLike,
+          child: Row(
+            children: [
+              PostActionBtn(
+                icon: _liked ? Icons.favorite : Icons.favorite_border,
+                label: '$_likesCount',
+                color: _liked ? Colors.red : null,
+                onPressed: _toggleLike,
+              ),
+              const SizedBox(width: 12),
+              GestureDetector(
+                onTap: () {},
+                child: Text(
+                  '回复',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.primary,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ],
+    );
+  }
+}
+
+// ── Top reply preview ──
+
+class _TopReply extends StatelessWidget {
+  final TopReply reply;
+
+  const _TopReply({required this.reply});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: RichText(
+                  text: TextSpan(
+                    style: DefaultTextStyle.of(
+                      context,
+                    ).style.copyWith(fontSize: 14, height: 20 / 14),
+                    children: [
+                      TextSpan(
+                        text: '${reply.nickname}:',
+                        style: TextStyle(color: cs.onSurfaceVariant),
+                      ),
+                      const TextSpan(text: ' '),
+                      TextSpan(text: reply.content),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.favorite_border,
+                    size: 14,
+                    color: cs.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${reply.likesCount}',
+                    style: TextStyle(fontSize: 14, color: cs.onSurfaceVariant),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          Row(
+            children: [
+              Icon(Icons.mode_comment_outlined, size: 14, color:Theme.of(context).colorScheme.primary),
+              const SizedBox(width: 4),
+              Text(
+                '${reply.likesCount}',
+                style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.primary),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

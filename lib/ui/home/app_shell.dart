@@ -71,7 +71,7 @@ class _AppShellState extends State<AppShell> {
             label: '活动',
           ),
           NavigationDestination(
-            icon: Badge(label: Text('2'), child: Icon(Icons.account_circle)),
+            icon: Icon(Icons.account_circle),
             label: '我的',
           ),
         ],
