@@ -1,5 +1,6 @@
 import 'package:easy_image_viewer/easy_image_viewer.dart';
 import 'package:flutter/material.dart';
+import 'package:trans_platform/ui/user/follow_info_page.dart';
 
 import '../../domain/models/user.dart';
 import 'user_buttons.dart';
@@ -21,14 +22,17 @@ class UserHeaderSection extends StatelessWidget {
       children: [
         // ── Cover image ──
         Positioned(
-          top: 0, left: 0, right: 0,
+          top: 0,
+          left: 0,
+          right: 0,
           child: SizedBox(
             height: 236,
             child: Stack(
               children: [
                 UserCoverImage(coverUrl: user.bioHeaderImg),
                 Positioned(
-                  top: 25, right: 10,
+                  top: 25,
+                  right: 10,
                   child: RoundIconButton(
                     icon: Icons.more_vert,
                     onPressed: () {},
@@ -41,21 +45,21 @@ class UserHeaderSection extends StatelessWidget {
 
         // ── Follow / Edit profile button ──
         Positioned(
-          top: 236, right: 10,
+          top: 236,
+          right: 10,
           child: isMe
               ? UserEditProfileButton(user: user)
               : UserFollowButton(targetUser: user),
         ),
 
         // ── Avatar ──
-        Positioned(
-          top: 196, left: 24,
-          child: UserAvatar(user: user),
-        ),
+        Positioned(top: 196, left: 24, child: UserAvatar(user: user)),
 
         // ── User info ──
         Positioned(
-          top: 280, left: 24, right: 24,
+          top: 280,
+          left: 24,
+          right: 24,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -75,7 +79,7 @@ class UserHeaderSection extends StatelessWidget {
                 ),
               ),
               if (user.bio != null && user.bio!.isNotEmpty) ...[
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
                 Text(
                   user.bio!,
                   style: theme.textTheme.bodyMedium?.copyWith(
@@ -84,10 +88,86 @@ class UserHeaderSection extends StatelessWidget {
                   ),
                 ),
               ],
+
+              if (user.followeesCount != null) ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    _StatButton(
+                      count: user.followeesCount ?? 0,
+                      label: '关注',
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => FollowInfoPage(
+                            userId: user.id,
+                            isFollowerPage: false,
+                          ),
+                        ),
+                      ),
+                    ),
+                    _StatButton(
+                      count: user.followersCount ?? 0,
+                      label: '粉丝',
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => FollowInfoPage(
+                            userId: user.id,
+                            isFollowerPage: true,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Stat button with bold count + label (e.g. "128 关注", "42 粉丝").
+class _StatButton extends StatelessWidget {
+  final int count;
+  final String label;
+  final VoidCallback onTap;
+
+  const _StatButton({
+    required this.count,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return TextButton(
+      style: TextButton.styleFrom(
+        foregroundColor: cs.secondary,
+        padding: const EdgeInsets.fromLTRB(0, 8, 16, 8),
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        visualDensity: VisualDensity.compact,
+      ),
+      onPressed: onTap,
+      child: Text.rich(
+        TextSpan(
+          children: [
+            TextSpan(
+              text: '$count ',
+              style: textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: cs.onSurface,
+              ),
+            ),
+            TextSpan(text: label),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -163,26 +243,28 @@ class UserAvatar extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         if (image != null) {
-          showImageViewer(context, image,
-              swipeDismissible: true, doubleTapZoomable: true);
+          showImageViewer(
+            context,
+            image,
+            swipeDismissible: true,
+            doubleTapZoomable: true,
+          );
         }
       },
       child: CircleAvatar(
-      radius: 40,
-      backgroundColor: cs.primaryContainer,
-      backgroundImage: image,
-      child: image == null
-          ? Text(
-              user.nickname.isNotEmpty
-                  ? user.nickname[0].toUpperCase()
-                  : '?',
-              style: TextStyle(
-                color: cs.onPrimaryContainer,
-                fontSize: 22,
-                fontWeight: FontWeight.w500,
-              ),
-            )
-          : null,
+        radius: 40,
+        backgroundColor: cs.primaryContainer,
+        backgroundImage: image,
+        child: image == null
+            ? Text(
+                user.nickname.isNotEmpty ? user.nickname[0].toUpperCase() : '?',
+                style: TextStyle(
+                  color: cs.onPrimaryContainer,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w500,
+                ),
+              )
+            : null,
       ),
     );
   }

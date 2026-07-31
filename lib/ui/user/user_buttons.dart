@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/repositories/user/user_repository.dart';
+import '../../data/services/current_user_provider.dart';
 import '../../domain/models/user.dart';
 import '../../utils/result.dart';
 import '../settings/profile_page.dart';
@@ -18,6 +19,7 @@ class UserFollowButton extends StatefulWidget {
 
 class _UserFollowButtonState extends State<UserFollowButton> {
   bool? _isFollowing;
+  bool? _isMe;
   bool _loading = true;
 
   @override
@@ -27,34 +29,39 @@ class _UserFollowButtonState extends State<UserFollowButton> {
   }
 
   Future<void> _checkFollowStatus() async {
-    final me = await context.read<UserRepository>().getCurrentUser();
-    if (!mounted) return;
-
-    final userId = switch (me) {
-      Ok<User>(:final value) => value.id,
-      _ => null,
-    };
+    final provider = context.read<CurrentUserProvider>();
+    final userId = provider.userId;
     if (userId == null) {
       if (mounted) setState(() => _loading = false);
       return;
     }
 
-    final result = await context.read<UserRepository>().getFollowees(userId);
-    if (!mounted) return;
+    // Lazily load the follow list once and cache it globally
+    if (provider.followeeIds.isEmpty) {
+      final result =
+          await context.read<UserRepository>().getFollowees(userId);
+      if (!mounted) return;
+      switch (result) {
+        case Ok<List<User>>(:final value):
+          provider.setFolloweeIds(value.map((u) => u.id));
+        case Error<List<User>>():
+          if (mounted) setState(() => _loading = false);
+          return;
+      }
+    }
 
-    switch (result) {
-      case Ok<List<User>>(:final value):
-        setState(() {
-          _isFollowing = value.any((u) => u.id == widget.targetUser.id);
-          _loading = false;
-        });
-      case Error<List<User>>():
-        if (mounted) setState(() => _loading = false);
+    if (mounted) {
+      setState(() {
+        _isFollowing = provider.isFollowing(widget.targetUser.id);
+        _isMe = userId == widget.targetUser.id;
+        _loading = false;
+      });
     }
   }
 
   Future<void> _toggleFollow() async {
     final repo = context.read<UserRepository>();
+    final provider = context.read<CurrentUserProvider>();
     final result = _isFollowing == true
         ? await repo.unfollow(widget.targetUser.id)
         : await repo.follow(widget.targetUser.id);
@@ -63,6 +70,11 @@ class _UserFollowButtonState extends State<UserFollowButton> {
     switch (result) {
       case Ok<void>():{
         setState(() => _isFollowing = !(_isFollowing ?? false));
+        if (_isFollowing == true) {
+          provider.addFollowee(widget.targetUser.id);
+        } else {
+          provider.removeFollowee(widget.targetUser.id);
+        }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(_isFollowing == true ? '已关注' : '已取消关注')),
         );
@@ -84,6 +96,12 @@ class _UserFollowButtonState extends State<UserFollowButton> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
     );
+    final unfollowStyle = FilledButton.styleFrom(
+      backgroundColor: cs.secondary,
+      foregroundColor: cs.onSecondary,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+    );
 
     if (_loading) {
       return FilledButton.icon(
@@ -96,15 +114,17 @@ class _UserFollowButtonState extends State<UserFollowButton> {
         label: const SizedBox.shrink(),
       );
     }
+    
+    if (_isMe == true) return const SizedBox.shrink();
 
     return FilledButton.icon(
-      style: style,
+      style: _isFollowing == true ? unfollowStyle : style,
       onPressed: _toggleFollow,
       icon: Icon(
         _isFollowing == true ? Icons.person_remove : Icons.person_add_alt,
         size: 18,
       ),
-      label: Text(_isFollowing == true ? '取消关注' : '关注'),
+      label: Text(_isFollowing == true ? '取关' : '关注'),
     );
   }
 }

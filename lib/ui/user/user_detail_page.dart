@@ -27,7 +27,7 @@ class UserDetailPage extends StatelessWidget {
             SliverOverlapAbsorber(
               handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
               sliver: SliverAppBar(
-                expandedHeight: 352,
+                expandedHeight: 382,
                 collapsedHeight: kToolbarHeight,
                 floating: false,
                 pinned: true,
