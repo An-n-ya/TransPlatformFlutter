@@ -11,11 +11,13 @@ import '../../domain/models/post.dart';
 import '../../utils/result.dart';
 import 'post_card.dart';
 
+
 /// Post detail page with comments and comment input.
 class PostDetailPage extends StatefulWidget {
-  final Post post;
+  final int? postId;
+  final Post? post;
 
-  const PostDetailPage({super.key, required this.post});
+  const PostDetailPage({super.key, this.postId, this.post});
 
   @override
   State<PostDetailPage> createState() => _PostDetailPageState();
@@ -29,6 +31,11 @@ class _PostDetailPageState extends State<PostDetailPage> {
   bool _isFocused = false;
   bool _isSending = false;
 
+  // Post state (loaded from network when only postId is given)
+  Post? _post;
+  bool _isLoadingPost = false;
+  String? _loadError;
+
   // Interaction state
   late bool _liked;
   late bool _collected;
@@ -38,15 +45,52 @@ class _PostDetailPageState extends State<PostDetailPage> {
   @override
   void initState() {
     super.initState();
-    _liked = widget.post.liked ?? false;
-    _collected = widget.post.collected ?? false;
-    _likesCount = widget.post.likesCount;
-    _collectionsCount = widget.post.collectionsCount;
-    _commentsFuture = _loadComments();
+    _post = widget.post;
+    _initInteractionState();
+    _initComments();
     _loadCurrentUser();
     _focusNode.addListener(
       () => setState(() => _isFocused = _focusNode.hasFocus),
     );
+    if (_post == null && widget.postId != null) {
+      _fetchPost();
+    }
+  }
+
+  void _initInteractionState() {
+    _liked = _post?.liked ?? false;
+    _collected = _post?.collected ?? false;
+    _likesCount = _post?.likesCount ?? 0;
+    _collectionsCount = _post?.collectionsCount ?? 0;
+  }
+
+  void _initComments() {
+    if (_post != null) {
+      _commentsFuture = _loadComments();
+    }
+  }
+
+  Future<void> _fetchPost() async {
+    setState(() => _isLoadingPost = true);
+    final result =
+        await context.read<PostRepository>().getPost(widget.postId!);
+    if (!mounted) return;
+    switch (result) {
+      case Ok<Post>(:final value):
+        setState(() {
+          _post = value;
+          _isLoadingPost = false;
+        });
+        _initInteractionState();
+        _initComments();
+        if (mounted) setState(() {});
+      case Error<Post>():{
+        setState(() {
+          _isLoadingPost = false;
+          _loadError = result.error.toString();
+        });
+      }
+    }
   }
 
   @override
@@ -61,7 +105,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
   }
 
   Future<Result<List<Comment>>> _loadComments() =>
-      context.read<PostRepository>().getPostComments(widget.post.id);
+      context.read<PostRepository>().getPostComments(_post!.id);
 
   Future<void> _sendComment() async {
     final content = _commentController.text.trim();
@@ -70,7 +114,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
     setState(() => _isSending = true);
 
     final result = await context.read<PostRepository>().createComment(
-      widget.post.id,
+      _post!.id,
       content: content,
     );
 
@@ -144,8 +188,8 @@ class _PostDetailPageState extends State<PostDetailPage> {
   Future<void> _toggleLike() async {
     final repo = context.read<PostRepository>();
     final result = _liked
-        ? await repo.unlikePost(widget.post.id)
-        : await repo.likePost(widget.post.id);
+        ? await repo.unlikePost(_post!.id)
+        : await repo.likePost(_post!.id);
     if (!mounted) return;
     switch (result) {
       case Ok<void>():
@@ -169,8 +213,8 @@ class _PostDetailPageState extends State<PostDetailPage> {
   Future<void> _toggleCollect() async {
     final repo = context.read<PostRepository>();
     final result = _collected
-        ? await repo.uncollectPost(widget.post.id)
-        : await repo.collectPost(widget.post.id);
+        ? await repo.uncollectPost(_post!.id)
+        : await repo.collectPost(_post!.id);
     if (!mounted) return;
     switch (result) {
       case Ok<void>():
@@ -193,6 +237,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    final post = _post;
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -204,48 +249,86 @@ class _PostDetailPageState extends State<PostDetailPage> {
           IconButton(icon: const Icon(Icons.more_vert), onPressed: () {}),
         ],
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: GestureDetector(
-              onTap: () => FocusScope.of(context).unfocus(),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.only(top: 10, bottom: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    PostHeader(
-                      user: widget.post.author,
-                      createdAt: widget.post.createdAt,
-                      location: widget.post.location,
-                      trailing: FilledButton.icon(
-                        onPressed: () {},
-                        icon: const Icon(Icons.notifications_none, size: 18),
-                        label: const Text('关注'),
-                        style: FilledButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(100),
-                          ),
+      body: _buildBody(post),
+    );
+  }
+
+  Widget _buildBody(Post? post) {
+    // Post not yet available
+    if (post == null) {
+      if (_isLoadingPost) {
+        return const Center(child: CircularProgressIndicator());
+      }
+      if (_loadError != null) {
+        return Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline, size: 48, color: Colors.red),
+              const SizedBox(height: 16),
+              Text('加载失败',
+                  style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 8),
+              Text(_loadError!,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodySmall),
+              const SizedBox(height: 16),
+              FilledButton.tonal(
+                onPressed: () {
+                  setState(() {
+                    _loadError = null;
+                    _fetchPost();
+                  });
+                },
+                child: const Text('重试'),
+              ),
+            ],
+          ),
+        );
+      }
+      // Both post and postId are null → blank page
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      children: [
+        Expanded(
+          child: GestureDetector(
+            onTap: () => FocusScope.of(context).unfocus(),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.only(top: 10, bottom: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  PostHeader(
+                    user: post.author,
+                    createdAt: post.createdAt,
+                    location: post.location,
+                    trailing: FilledButton.icon(
+                      onPressed: () {},
+                      icon: const Icon(Icons.notifications_none, size: 18),
+                      label: const Text('关注'),
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(100),
                         ),
                       ),
                     ),
-                    PostContent(
-                      content: widget.post.content,
-                      images: widget.post.images,
-                    ),
-                    InteractionBar(
-                      liked: _liked,
-                      collected: _collected,
-                      likesCount: _likesCount,
-                      collectionsCount: _collectionsCount,
-                      commentsCount: widget.post.commentsCount,
-                      onLike: _toggleLike,
-                      onCollect: _toggleCollect,
-                      onComment: () => {},
+                  ),
+                  PostContent(content: post.content, images: post.images),
+                  InteractionBar(
+                    liked: _liked,
+                    collected: _collected,
+                    likesCount: _likesCount,
+                    collectionsCount: _collectionsCount,
+                    commentsCount: post.commentsCount,
+                    onLike: _toggleLike,
+                    onCollect: _toggleCollect,
+                    onComment: () => {},
                     ),
                     const Divider(height: 24),
                     _buildCommentsSection(),
@@ -262,7 +345,6 @@ class _PostDetailPageState extends State<PostDetailPage> {
             onSend: _sendComment,
           ),
         ],
-      ),
     );
   }
 

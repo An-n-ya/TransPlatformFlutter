@@ -6,6 +6,7 @@ import '../../domain/models/notification.dart';
 import '../../utils/result.dart';
 import '../../utils/time.dart';
 import '../posts/post_card.dart';
+import '../posts/post_detail_page.dart';
 
 /// Notifications page with tabs for replies, likes, and new followers.
 class NotificationPage extends StatelessWidget {
@@ -53,13 +54,16 @@ class _NotificationTabBar extends StatelessWidget
         };
 
         final replyUnread = notifications
-            .where((n) =>
-                (n.type == 'comment' || n.type == 'reply') && !n.isRead)
+            .where(
+              (n) => (n.type == 'comment' || n.type == 'reply') && !n.isRead,
+            )
             .length;
         final likeUnread = notifications
-            .where((n) =>
-                (n.type == 'post_like' || n.type == 'collection') &&
-                !n.isRead)
+            .where(
+              (n) =>
+                  (n.type == 'post_like' || n.type == 'collection') &&
+                  !n.isRead,
+            )
             .length;
         final followUnread = notifications
             .where((n) => n.type == 'follow' && !n.isRead)
@@ -214,59 +218,73 @@ class _NotificationTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 6),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          PostHeader(
-            user: item.fromUser,
-            title: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Text(
-                  item.fromUser.nickname,
-                  style: const TextStyle(fontWeight: FontWeight.w500),
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  _actionText(item.type),
-                  style: TextStyle(fontSize: 14, color: cs.onSurfaceVariant),
-                ),
-              ],
+    return InkWell(
+      onTap: () {
+        if (item.targetId != null) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => PostDetailPage(postId: item.targetId),
             ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 2),
-                Row(
-                  children: [
-                    if (!item.isRead) ...[
-                      const Padding(
-                        padding: EdgeInsets.only(right: 6),
-                        child: _UnreadDot(),
+          );
+        }
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 6),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            PostHeader(
+              user: item.fromUser,
+              title: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    item.fromUser.nickname,
+                    style: const TextStyle(fontWeight: FontWeight.w500),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    _actionText(item.type),
+                    style: TextStyle(fontSize: 14, color: cs.onSurfaceVariant),
+                  ),
+                ],
+              ),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      if (!item.isRead) ...[
+                        const Padding(
+                          padding: EdgeInsets.only(right: 6),
+                          child: _UnreadDot(),
+                        ),
+                      ],
+                      Text(
+                        formatRelativeTime(item.createdAt),
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: cs.onSurfaceVariant,
+                        ),
                       ),
                     ],
-                    Text(
-                      formatRelativeTime(item.createdAt),
-                      style: TextStyle(fontSize: 14, color: cs.onSurfaceVariant),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            trailing: item.type == 'follow' ? _FollowButton() : null,
-          ),
-          if (item.content != null) ...[
-            Padding(
-              padding: const EdgeInsets.only(left: 72),
-              child: Text(
-                item.content!,
-                style: TextStyle(fontSize: 14, color: cs.onSurface),
+                  ),
+                ],
               ),
+              trailing: item.type == 'follow' ? _FollowButton() : null,
             ),
+            if (item.content != null) ...[
+              Padding(
+                padding: const EdgeInsets.only(left: 72),
+                child: Text(
+                  item.content!,
+                  style: TextStyle(fontSize: 14, color: cs.onSurface),
+                ),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
