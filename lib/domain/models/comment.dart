@@ -49,6 +49,7 @@ class Comment {
   final String content;
   final int likesCount;
   final int commentsCount;
+  final bool? liked;
   final TopReply? topReply;
   final DateTime createdAt;
 
@@ -61,6 +62,7 @@ class Comment {
     required this.content,
     this.likesCount = 0,
     this.commentsCount = 0,
+    this.liked,
     this.topReply,
     required this.createdAt,
   });
@@ -77,6 +79,7 @@ class Comment {
       content: json['content'] as String? ?? '',
       likesCount: json['likesCount'] as int? ?? 0,
       commentsCount: json['commentsCount'] as int? ?? 0,
+      liked: json['liked'] as bool?,
       topReply: json['topReply'] != null
           ? TopReply.fromJson(json['topReply'] as Map<String, dynamic>)
           : null,
@@ -93,6 +96,7 @@ class Comment {
         'replyToUser': replyToUser?.toJson(),
         'content': content,
         'likesCount': likesCount,
+        'liked': liked,
         'topReply': topReply?.toJson(),
         'createdAt': createdAt.toIso8601String(),
       };
