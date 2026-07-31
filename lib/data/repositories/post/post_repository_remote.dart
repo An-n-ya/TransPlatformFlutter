@@ -160,6 +160,19 @@ class PostRepositoryRemote implements PostRepository {
   }
 
   @override
+  Future<Result<Comment>> createReply(int commentId,
+      {required String content, int? replyToUserId}) async {
+    return _api.post<Comment>(
+      '/api/v1/comments/$commentId/replies',
+      body: {
+        'content': content,
+        if (replyToUserId != null) 'replyToUserId': replyToUserId,
+      },
+      fromData: (data) => Comment.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
+  @override
   Future<Result<void>> deleteComment(int commentId) async {
     return _api.delete<void>('/api/v1/comments/$commentId');
   }

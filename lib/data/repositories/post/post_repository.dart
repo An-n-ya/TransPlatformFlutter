@@ -50,7 +50,12 @@ abstract class PostRepository {
   Future<Result<Comment>> createComment(
     int postId, {
     required String content,
-    int? parentId,
+  });
+
+  /// Create a reply to a comment.
+  Future<Result<Comment>> createReply(
+    int commentId, {
+    required String content,
     int? replyToUserId,
   });
 

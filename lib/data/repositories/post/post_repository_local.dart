@@ -90,7 +90,7 @@ class PostRepositoryLocal implements PostRepository {
 
   @override
   Future<Result<Comment>> createComment(int postId,
-      {required String content, int? parentId, int? replyToUserId}) async {
+      {required String content}) async {
     await Future.delayed(const Duration(milliseconds: 200));
     return Result.ok(
       Comment(
@@ -98,8 +98,23 @@ class PostRepositoryLocal implements PostRepository {
         postId: postId,
         author: _currentUser,
         content: content,
-        parentId: parentId,
-        replyToUser: replyToUserId != null ? _sampleUsers[1] : null,
+        createdAt: DateTime.now(),
+      ),
+    );
+  }
+
+  @override
+  Future<Result<Comment>> createReply(int commentId,
+      {required String content, int? replyToUserId}) async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    return Result.ok(
+      Comment(
+        id: DateTime.now().millisecondsSinceEpoch,
+        postId: commentId,
+        author: _currentUser,
+        content: content,
+        parentId: commentId,
+        replyToUser: _currentUser,
         createdAt: DateTime.now(),
       ),
     );

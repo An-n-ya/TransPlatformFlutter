@@ -35,7 +35,11 @@ class TopReply {
       };
 }
 
-/// Comment view object matching backend [CommentVO].
+/// Comment / reply view object matching backend [CommentVO].
+///
+/// Both top-level comments and replies share this model:
+/// - [parentId] is null for top-level comments, set for replies
+/// - [replyToUser] is the user being replied to (null for top-level)
 class Comment {
   final int id;
   final int postId;

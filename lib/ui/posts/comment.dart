@@ -44,11 +44,7 @@ class _CommentTile extends StatefulWidget {
   final bool isMe;
   final VoidCallback? onDelete;
 
-  const _CommentTile({
-    required this.comment,
-    this.isMe = false,
-    this.onDelete,
-  });
+  const _CommentTile({required this.comment, this.isMe = false, this.onDelete});
 
   @override
   State<_CommentTile> createState() => _CommentTileState();
@@ -72,19 +68,21 @@ class _CommentTileState extends State<_CommentTile> {
         : await repo.likeComment(widget.comment.id);
     if (!mounted) return;
     switch (result) {
-      case Ok<void>():{
-        setState(() {
-          _liked = !_liked;
-          _likesCount += _liked ? 1 : -1;
-        });
-      }
-      case Error<void>():{
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('操作失败')),
-          );
+      case Ok<void>():
+        {
+          setState(() {
+            _liked = !_liked;
+            _likesCount += _liked ? 1 : -1;
+          });
         }
-      }
+      case Error<void>():
+        {
+          if (mounted) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(const SnackBar(content: Text('操作失败')));
+          }
+        }
     }
   }
 
@@ -109,8 +107,11 @@ class _CommentTileState extends State<_CommentTile> {
                       value: 'delete',
                       child: Row(
                         children: [
-                          Icon(Icons.delete_outline,
-                              size: 20, color: Colors.red),
+                          Icon(
+                            Icons.delete_outline,
+                            size: 20,
+                            color: Colors.red,
+                          ),
                           SizedBox(width: 8),
                           Text('删除', style: TextStyle(color: Colors.red)),
                         ],
@@ -127,12 +128,36 @@ class _CommentTileState extends State<_CommentTile> {
         ),
         const SizedBox(height: 8),
         Padding(
-          padding: const EdgeInsets.only(left: 60),
-          child: PostActionBtn(
-            icon: _liked ? Icons.favorite : Icons.favorite_border,
-            label: '$_likesCount',
-            color: _liked ? Colors.red : null,
-            onPressed: _toggleLike,
+          padding: const EdgeInsets.only(left: 72),
+          child: Row(
+            children: [
+              PostActionBtn(
+                icon: _liked ? Icons.favorite : Icons.favorite_border,
+                label: '$_likesCount',
+                color: _liked ? Colors.red : null,
+                onPressed: _toggleLike,
+              ),
+              const SizedBox(width: 12),
+              GestureDetector(
+                onTap: () => showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(24),
+                    ),
+                  ),
+                  builder: (_) => SizedBox(
+                    height: MediaQuery.of(context).size.height * 0.9,
+                    child: ReplyDetailSheet(comment: widget.comment),
+                  ),
+                ),
+                child: Text(
+                  '回复',
+                  style: TextStyle(color: Theme.of(context).colorScheme.primary, fontSize: 14),
+                ),
+              ),
+            ],
           ),
         ),
         if (widget.comment.topReply != null)

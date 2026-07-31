@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
 import 'package:trans_platform/data/repositories/post/post_repository.dart';
 import 'package:trans_platform/domain/models/comment.dart';
+import 'package:trans_platform/domain/models/user.dart';
 import 'package:trans_platform/ui/posts/interaction.dart';
 import 'package:trans_platform/ui/posts/post_card.dart';
 import 'package:trans_platform/ui/posts/comment_input.dart';
@@ -91,7 +92,7 @@ class TopReply extends StatelessWidget {
                   ),
                   builder: (_) => SizedBox(
                     height: MediaQuery.of(context).size.height * 0.9,
-                    child: _ReplyDetailSheet(comment: comment),
+                    child: ReplyDetailSheet(comment: comment),
                   ),
                 ),
               ),
@@ -112,22 +113,28 @@ class TopReply extends StatelessWidget {
 
 // ── Reply detail sheet ──
 
-class _ReplyDetailSheet extends StatefulWidget {
+class ReplyDetailSheet extends StatefulWidget {
   final Comment comment;
 
-  const _ReplyDetailSheet({required this.comment});
+  const ReplyDetailSheet({required this.comment});
 
   @override
-  State<_ReplyDetailSheet> createState() => _ReplyDetailSheetState();
+  State<ReplyDetailSheet> createState() => _ReplyDetailSheetState();
 }
 
-class _ReplyDetailSheetState extends State<_ReplyDetailSheet> {
+class _ReplyDetailSheetState extends State<ReplyDetailSheet> {
   late Future<Result<List<Comment>>> _repliesFuture;
 
   final _inputController = TextEditingController();
   final _inputFocusNode = FocusNode();
   bool _inputFocused = false;
   bool _isSending = false;
+  int? _replyToUserId;
+
+  void _startReplyTo(User author) {
+    setState(() => _replyToUserId = author.id);
+    _inputFocusNode.requestFocus();
+  }
 
   @override
   void initState() {
@@ -153,9 +160,10 @@ class _ReplyDetailSheetState extends State<_ReplyDetailSheet> {
     if (content.isEmpty) return;
     setState(() => _isSending = true);
 
-    final result = await context.read<PostRepository>().createComment(
+    final result = await context.read<PostRepository>().createReply(
       widget.comment.id,
       content: content,
+      replyToUserId: _replyToUserId,
     );
 
     if (!mounted) return;
@@ -163,7 +171,10 @@ class _ReplyDetailSheetState extends State<_ReplyDetailSheet> {
       case Ok<Comment>():
         {
           _inputController.clear();
-          setState(() => _repliesFuture = _loadReplies());
+          _repliesFuture = _loadReplies();
+          setState(() {
+            _replyToUserId = null;
+          });
         }
       case Error<Comment>():
         {
@@ -257,7 +268,10 @@ class _ReplyDetailSheetState extends State<_ReplyDetailSheet> {
                 : ListView(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     children: value
-                        .map<Widget>((r) => _ReplyDetailItem(comment: r))
+                        .map<Widget>((r) => _ReplyDetailItem(
+                              comment: r,
+                              onReply: () => _startReplyTo(r.author),
+                            ))
                         .toList(),
                   ),
           Error<List<Comment>>() => const Center(child: Text('加载失败')),
@@ -269,8 +283,9 @@ class _ReplyDetailSheetState extends State<_ReplyDetailSheet> {
 
 class _ReplyDetailItem extends StatelessWidget {
   final Comment comment;
+  final VoidCallback? onReply;
 
-  const _ReplyDetailItem({required this.comment});
+  const _ReplyDetailItem({required this.comment, this.onReply});
 
   @override
   Widget build(BuildContext context) {
@@ -315,7 +330,7 @@ class _ReplyDetailItem extends StatelessWidget {
                     ),
                     const SizedBox(width: 12),
                     GestureDetector(
-                      onTap: () {},
+                      onTap: onReply,
                       child: Text(
                         '回复',
                         style: TextStyle(color: cs.primary, fontSize: 14),
