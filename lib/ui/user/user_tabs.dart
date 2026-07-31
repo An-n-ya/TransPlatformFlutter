@@ -92,12 +92,22 @@ class _UserPostsTabState extends State<UserPostsTab> {
                     posts: value,
                     isMe: widget.isMe,
                     onPostDeleted: () => setState(_loadPosts),
+                    onRefresh: _refreshPosts,
                   ),
                 ),
           Error<List<Post>>(:final error) => _buildError(error),
         };
       },
     );
+  }
+
+  Future<void> _refreshPosts() async {
+    final future =
+        context.read<PostRepository>().getUserPosts(widget.userId);
+    setState(() {
+      _postsFuture = future;
+    });
+    await future;
   }
 
   Widget _buildError(Exception error) {
@@ -144,12 +154,20 @@ class _UserLikedPostsTabState extends State<UserLikedPostsTab> {
     _postsFuture = context.read<PostRepository>().getLikedPosts();
   }
 
+  Future<void> _refreshPosts() async {
+    final future = context.read<PostRepository>().getLikedPosts();
+    setState(() {
+      _postsFuture = future;
+    });
+    await future;
+  }
+
   @override
   Widget build(BuildContext context) {
     return _PostListBody(
       future: _postsFuture,
       isMe: widget.isMe,
-      onRefresh: () => setState(_loadPosts),
+      onRefresh: _refreshPosts,
     );
   }
 }
@@ -175,12 +193,20 @@ class _UserCollectedPostsTabState extends State<UserCollectedPostsTab> {
     _postsFuture = context.read<PostRepository>().getCollectedPosts();
   }
 
+  Future<void> _refreshPosts() async {
+    final future = context.read<PostRepository>().getCollectedPosts();
+    setState(() {
+      _postsFuture = future;
+    });
+    await future;
+  }
+
   @override
   Widget build(BuildContext context) {
     return _PostListBody(
       future: _postsFuture,
       isMe: widget.isMe,
-      onRefresh: () => setState(_loadPosts),
+      onRefresh: _refreshPosts,
     );
   }
 }
@@ -189,7 +215,7 @@ class _UserCollectedPostsTabState extends State<UserCollectedPostsTab> {
 class _PostListBody extends StatelessWidget {
   final Future<Result<List<Post>>> future;
   final bool isMe;
-  final VoidCallback onRefresh;
+  final Future<void> Function() onRefresh;
 
   const _PostListBody({
     required this.future,
@@ -210,7 +236,7 @@ class _PostListBody extends StatelessWidget {
               ? const Center(child: Text('暂无内容'))
               : Padding(
                   padding: const EdgeInsets.only(top: 80),
-                  child: PostFeed(posts: value, isMe: isMe),
+                  child: PostFeed(posts: value, isMe: isMe, onRefresh: onRefresh),
                 ),
           Error<List<Post>>(:final error) => Center(
               child: Column(

@@ -32,12 +32,14 @@ class PostFeed extends StatefulWidget {
   final List<Post> posts;
   final bool isMe;
   final VoidCallback? onPostDeleted;
+  final Future<void> Function()? onRefresh;
 
   const PostFeed({
     super.key,
     required this.posts,
     this.isMe = false,
     this.onPostDeleted,
+    this.onRefresh,
   });
 
   @override
@@ -56,7 +58,8 @@ class _PostFeedState extends State<PostFeed> {
 
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
+    final listView = ListView.builder(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(8),
       itemCount: widget.posts.length,
       itemBuilder: (_, i) {
@@ -79,6 +82,14 @@ class _PostFeedState extends State<PostFeed> {
               },
         );
       },
+    );
+
+    final onRefresh = widget.onRefresh;
+    if (onRefresh == null) return listView;
+
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: listView,
     );
   }
 }

@@ -33,6 +33,14 @@ class _PostsState extends State<Posts> {
     _feedFuture = context.read<PostRepository>().getFeed();
   }
 
+  Future<void> _refreshFeed() async {
+    final future = context.read<PostRepository>().getFeed();
+    setState(() {
+      _feedFuture = future;
+    });
+    await future;
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<Result<List<Post>>>(
@@ -45,7 +53,7 @@ class _PostsState extends State<Posts> {
         return switch (snapshot.data!) {
           Ok<List<Post>>(:final value) => value.isEmpty
               ? const Center(child: Text('暂无内容'))
-              : PostFeed(posts: value),
+              : PostFeed(posts: value, onRefresh: _refreshFeed),
           Error<List<Post>>(:final error) => _ErrorView(
               message: _formatError(error),
               onRetry: () => setState(_loadFeed),
