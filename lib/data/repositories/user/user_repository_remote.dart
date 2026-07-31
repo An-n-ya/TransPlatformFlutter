@@ -55,6 +55,23 @@ class UserRepositoryRemote implements UserRepository {
   }
 
   @override
+  Future<Result<User>> setPinnedPost(int postId) async {
+    return _api.put<User>(
+      '/api/v1/users/me/pinned-post',
+      body: {'postId': postId},
+      fromData: (data) => User.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
+  @override
+  Future<Result<User>> clearPinnedPost() async {
+    return _api.delete<User>(
+      '/api/v1/users/me/pinned-post',
+      fromData: (data) => User.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
+  @override
   Future<Result<List<User>>> getFollowers(int userId,
       {int page = 0, int size = 20}) async {
     final result = await _api.getPage<User>(

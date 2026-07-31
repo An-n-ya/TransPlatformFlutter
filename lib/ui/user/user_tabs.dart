@@ -9,9 +9,10 @@ import '../posts/post_card.dart';
 /// Tab content: list of posts by this user.
 class UserPostsTab extends StatefulWidget {
   final int userId;
+  final int? pinnedPostId;
   final bool isMe;
 
-  const UserPostsTab({super.key, required this.userId, this.isMe = false});
+  const UserPostsTab({super.key, required this.userId, this.pinnedPostId, this.isMe = false});
 
   @override
   State<UserPostsTab> createState() => _UserPostsTabState();
@@ -19,6 +20,7 @@ class UserPostsTab extends StatefulWidget {
 
 class _UserPostsTabState extends State<UserPostsTab> {
   late Future<Result<List<Post>>> _postsFuture;
+  late Future<Result<Post>> _pinnedPostFuture;
 
   @override
   void initState() {
@@ -28,12 +30,55 @@ class _UserPostsTabState extends State<UserPostsTab> {
 
   void _loadPosts() {
     _postsFuture = context.read<PostRepository>().getUserPosts(widget.userId);
+    if (widget.pinnedPostId != null) {
+      _pinnedPostFuture = context.read<PostRepository>().getPost(widget.pinnedPostId!);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (widget.pinnedPostId == null) {
+      return _buildPostsList(_postsFuture);
+    }
+
+    // Combine pinned post + regular posts list
     return FutureBuilder<Result<List<Post>>>(
       future: _postsFuture,
+      builder: (_, postsSnapshot) {
+        if (!postsSnapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final postsResult = postsSnapshot.data!;
+        if (postsResult is Error<List<Post>>) {
+          return _buildError(postsResult.error);
+        }
+
+        final posts = (postsResult as Ok<List<Post>>).value;
+
+        return FutureBuilder<Result<Post>>(
+          future: _pinnedPostFuture,
+          builder: (_, pinnedSnapshot) {
+            final pinned = switch (pinnedSnapshot.data) {
+              Ok<Post>(:final value) => value.copyWith(isPinned: true),
+              _ => null,
+            };
+
+            // Remove pinned post from list if already present, then prepend
+            final combined = <Post>[
+              if (pinned != null) pinned,
+              ...posts.where((p) => p.id != pinned?.id),
+            ];
+
+            return _buildPostsList(Future.value(Result.ok(combined)));
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildPostsList(Future<Result<List<Post>>> future) {
+    return FutureBuilder<Result<List<Post>>>(
+      future: future,
       builder: (_, snapshot) {
         if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
@@ -49,28 +94,31 @@ class _UserPostsTabState extends State<UserPostsTab> {
                     onPostDeleted: () => setState(_loadPosts),
                   ),
                 ),
-          Error<List<Post>>(:final error) => Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                  const SizedBox(height: 16),
-                  Text('加载失败',
-                      style: Theme.of(context).textTheme.titleMedium),
-                  const SizedBox(height: 8),
-                  Text(error.toString(),
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodySmall),
-                  const SizedBox(height: 16),
-                  FilledButton.tonal(
-                    onPressed: () => setState(_loadPosts),
-                    child: const Text('重试'),
-                  ),
-                ],
-              ),
-            ),
+          Error<List<Post>>(:final error) => _buildError(error),
         };
       },
+    );
+  }
+
+  Widget _buildError(Exception error) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.error_outline, size: 48, color: Colors.red),
+          const SizedBox(height: 16),
+          Text('加载失败', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          Text(error.toString(),
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodySmall),
+          const SizedBox(height: 16),
+          FilledButton.tonal(
+            onPressed: () => setState(_loadPosts),
+            child: const Text('重试'),
+          ),
+        ],
+      ),
     );
   }
 }

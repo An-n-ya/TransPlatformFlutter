@@ -22,6 +22,12 @@ abstract class UserRepository {
   /// Unfollow a user.
   Future<Result<void>> unfollow(int userId);
 
+  /// Set a post as the user's pinned post.
+  Future<Result<User>> setPinnedPost(int postId);
+
+  /// Clear the user's pinned post.
+  Future<Result<User>> clearPinnedPost();
+
   /// Get followers of a user (paginated).
   Future<Result<List<User>>> getFollowers(int userId,
       {int page = 0, int size = 20});

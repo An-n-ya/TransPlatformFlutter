@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:trans_platform/ui/posts/interaction.dart';
 
 import '../../data/repositories/post/post_repository.dart';
+import '../../data/repositories/user/user_repository.dart';
 import '../../domain/models/post.dart';
 import '../../domain/models/user.dart';
 import '../../utils/result.dart';
@@ -85,6 +86,7 @@ class _PostFeedState extends State<PostFeed> {
 class PostCard extends StatefulWidget {
   final Post post;
   final bool isMe;
+  final bool isPinned;
   final VoidCallback? onPostDeleted;
   final bool initialLiked;
   final bool initialCollected;
@@ -102,6 +104,7 @@ class PostCard extends StatefulWidget {
     super.key,
     required this.post,
     this.isMe = false,
+    this.isPinned = false,
     this.onPostDeleted,
     this.initialLiked = false,
     this.initialCollected = false,
@@ -116,6 +119,7 @@ class PostCard extends StatefulWidget {
 
 class _PostCardState extends State<PostCard> {
   late bool _liked;
+  late bool _isPinned;
   late bool _collected;
   late int _likesCount;
   late int _collectionsCount;
@@ -124,6 +128,7 @@ class _PostCardState extends State<PostCard> {
   void initState() {
     super.initState();
     _liked = widget.initialLiked;
+    _isPinned = widget.post.isPinned;
     _collected = widget.initialCollected;
     _likesCount = widget.initialLikesCount;
     _collectionsCount = widget.initialCollectionsCount;
@@ -202,30 +207,12 @@ class _PostCardState extends State<PostCard> {
             user: widget.post.author,
             createdAt: widget.post.createdAt,
             location: widget.post.location,
-            trailing: widget.isMe
-                ? PopupMenuButton<String>(
-                    icon: const Icon(Icons.more_vert),
-                    onSelected: (value) {
-                      if (value == 'delete') _deletePost();
-                    },
-                    itemBuilder: (_) => [
-                      const PopupMenuItem(
-                        value: 'delete',
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.delete_outline,
-                              size: 20,
-                              color: Colors.red,
-                            ),
-                            SizedBox(width: 8),
-                            Text('删除', style: TextStyle(color: Colors.red)),
-                          ],
-                        ),
-                      ),
-                    ],
-                  )
-                : const Icon(Icons.more_vert),
+            trailing: PostCardTrailing(
+              isMe: widget.isMe,
+              isPinned: _isPinned,
+              onDelete: _deletePost,
+              onTogglePin: _togglePin,
+            ),
           ),
 
           PostContent(content: widget.post.content, images: widget.post.images),
@@ -248,6 +235,29 @@ class _PostCardState extends State<PostCard> {
         ],
       ),
     );
+  }
+
+  Future<void> _togglePin() async {
+    final repo = context.read<UserRepository>();
+    final result = _isPinned
+        ? await repo.clearPinnedPost()
+        : await repo.setPinnedPost(widget.post.id);
+    if (!mounted) return;
+    switch (result) {
+      case Ok<User>():{
+        setState(() => _isPinned = !_isPinned);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(_isPinned ? '已置顶' : '已取消置顶')),
+        );
+      }
+      case Error<User>():{
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('操作失败')),
+          );
+        }
+      }
+    }
   }
 
   Future<void> _deletePost() async {
@@ -384,6 +394,77 @@ class PostHeader extends StatelessWidget {
               ),
             )
           : null,
+    );
+  }
+}
+
+/// Trailing widget for a post header: pinned flag + more menu.
+class PostCardTrailing extends StatelessWidget {
+  final bool isMe;
+  final bool isPinned;
+  final VoidCallback onDelete;
+  final VoidCallback onTogglePin;
+
+  const PostCardTrailing({
+    super.key,
+    required this.isMe,
+    required this.isPinned,
+    required this.onDelete,
+    required this.onTogglePin,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (isPinned)
+          const Padding(
+            padding: EdgeInsets.only(right: 8),
+            child: Icon(Icons.push_pin, size: 18, color: Colors.amber),
+          ),
+        if (isMe)
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            onSelected: (value) {
+              switch (value) {
+                case 'delete':
+                  onDelete();
+                case 'pin':
+                  onTogglePin();
+              }
+            },
+            itemBuilder: (_) => [
+              PopupMenuItem(
+                value: 'pin',
+                child: Row(
+                  children: [
+                    Icon(
+                      isPinned ? Icons.push_pin_outlined : Icons.push_pin,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(isPinned ? '取消置顶' : '置顶'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'delete',
+                child: Row(
+                  children: [
+                    Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                    SizedBox(width: 8),
+                    Text('删除', style: TextStyle(color: Colors.red)),
+                  ],
+                ),
+              ),
+            ],
+          )
+        else if (!isPinned)
+          const SizedBox.shrink()
+        else
+          const SizedBox(width: 24),
+      ],
     );
   }
 }

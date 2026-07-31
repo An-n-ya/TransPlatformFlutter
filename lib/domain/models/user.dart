@@ -9,6 +9,7 @@ class User {
   final String? bio;
   final String? bioHeaderImg;
   final int status;
+  final int? pinnedPostId;
   final int? followersCount;
   final int? followeesCount;
   final DateTime? createdAt;
@@ -21,6 +22,7 @@ class User {
     this.bio,
     this.bioHeaderImg,
     this.status = 1,
+    this.pinnedPostId,
     this.followersCount,
     this.followeesCount,
     this.createdAt,
@@ -35,6 +37,7 @@ class User {
       bio: json['bio'] as String?,
       bioHeaderImg: resolveImageUrl(json['bioHeaderImg'] as String?),
       status: json['status'] as int? ?? 1,
+      pinnedPostId: json['pinnedPostId'] as int?,
       followersCount: json['followersCount'] as int?,
       followeesCount: json['followeesCount'] as int?,
       createdAt: json['createdAt'] != null
@@ -51,6 +54,7 @@ class User {
         'bio': bio,
         'bioHeaderImg': bioHeaderImg,
         'status': status,
+        'pinnedPostId': pinnedPostId,
         'followersCount': followersCount,
         'followeesCount': followeesCount,
         'createdAt': createdAt?.toIso8601String(),

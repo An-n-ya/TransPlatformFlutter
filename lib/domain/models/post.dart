@@ -28,6 +28,7 @@ class Post {
   final int likesCount;
   final int commentsCount;
   final int collectionsCount;
+  final bool isPinned;
   final bool? liked;
   final bool? collected;
   final DateTime createdAt;
@@ -41,6 +42,7 @@ class Post {
     this.likesCount = 0,
     this.commentsCount = 0,
     this.collectionsCount = 0,
+    this.isPinned = false,
     this.liked,
     this.collected,
     required this.createdAt,
@@ -61,6 +63,7 @@ class Post {
       collectionsCount: json['collectionsCount'] as int? ?? 0,
       liked: json['liked'] as bool?,
       collected: json['collected'] as bool?,
+      isPinned: json['isPinned'] as bool? ?? false,
       createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ??
           DateTime.now(),
     );
@@ -77,6 +80,24 @@ class Post {
         'collectionsCount': collectionsCount,
         'liked': liked,
         'collected': collected,
+        'isPinned': isPinned,
         'createdAt': createdAt.toIso8601String(),
       };
+
+  Post copyWith({bool? isPinned}) {
+    return Post(
+      id: id,
+      author: author,
+      content: content,
+      images: images,
+      location: location,
+      likesCount: likesCount,
+      commentsCount: commentsCount,
+      collectionsCount: collectionsCount,
+      isPinned: isPinned ?? this.isPinned,
+      liked: liked,
+      collected: collected,
+      createdAt: createdAt,
+    );
+  }
 }

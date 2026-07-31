@@ -45,7 +45,11 @@ class UserDetailPage extends StatelessWidget {
           ],
           body: TabBarView(
             children: [
-              UserPostsTab(userId: user.id, isMe: isMe),
+              UserPostsTab(
+                userId: user.id,
+                pinnedPostId: user.pinnedPostId,
+                isMe: isMe,
+              ),
               UserLikedPostsTab(isMe: isMe),
               UserCollectedPostsTab(isMe: isMe),
             ],

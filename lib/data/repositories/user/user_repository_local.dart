@@ -39,6 +39,18 @@ class UserRepositoryLocal implements UserRepository {
   }
 
   @override
+  Future<Result<User>> setPinnedPost(int postId) async {
+    await Future.delayed(const Duration(milliseconds: 100));
+    return Result.ok(_demoUser);
+  }
+
+  @override
+  Future<Result<User>> clearPinnedPost() async {
+    await Future.delayed(const Duration(milliseconds: 100));
+    return Result.ok(_demoUser);
+  }
+
+  @override
   Future<Result<List<User>>> getFollowers(int userId,
       {int page = 0, int size = 20}) async {
     await Future.delayed(const Duration(milliseconds: 200));
