@@ -9,6 +9,7 @@ import '../../data/services/current_user_provider.dart';
 import '../../domain/models/comment.dart';
 import '../../domain/models/post.dart';
 import '../../utils/result.dart';
+import '../user/user_buttons.dart';
 import 'post_card.dart';
 
 
@@ -304,20 +305,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
                     user: post.author,
                     createdAt: post.createdAt,
                     location: post.location,
-                    trailing: FilledButton.icon(
-                      onPressed: () {},
-                      icon: const Icon(Icons.notifications_none, size: 18),
-                      label: const Text('关注'),
-                      style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(100),
-                        ),
-                      ),
-                    ),
+                    trailing: UserFollowButton(targetUser: post.author),
                   ),
                   PostContent(content: post.content, images: post.images),
                   InteractionBar(
