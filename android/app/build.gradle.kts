@@ -6,7 +6,9 @@ plugins {
 
 android {
     namespace = "com.example.trans_platform"
-    compileSdk = flutter.compileSdkVersion
+    // permission_handler_android 14.x requires compileSdk >= 37
+    // (flutter.compileSdkVersion default is 36).
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

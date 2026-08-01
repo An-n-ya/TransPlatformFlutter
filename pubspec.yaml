@@ -52,6 +52,8 @@ dependencies:
 
   # Easy image viewer
   easy_image_viewer: ^1.0.0
+  agora_rtc_engine: ^6.5.4
+  permission_handler: ^13.0.0
 
 dev_dependencies:
   flutter_test:

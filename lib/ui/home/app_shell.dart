@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:trans_platform/ui/activites/activities_page.dart';
 
 import '../../data/repositories/user/user_repository.dart';
 import '../../domain/models/user.dart';
@@ -78,7 +79,7 @@ class _AppShellState extends State<AppShell> {
       ),
       body: [
         const HomePage(),
-        const Posts(),
+        const ActivitiesPage(),
         const MessagesPage(),
       ][_tabIndex],
     );
