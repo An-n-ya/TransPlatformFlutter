@@ -16,7 +16,8 @@ class AboutPage extends StatelessWidget {
         children: [
           // App icon
           Center(
-            child: Icon(Icons.public, size: 80, color: colorScheme.primary),
+            child: Image.asset('assets/images/logoTP.png',
+                width: 80, height: 80),
           ),
           const SizedBox(height: 16),
 

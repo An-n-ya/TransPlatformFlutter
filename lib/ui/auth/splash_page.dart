@@ -57,13 +57,12 @@ class _SplashPageState extends State<SplashPage> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.public, size: 72, color: colorScheme.primary),
+            Image.asset('assets/images/logoTP.png', width: 72, height: 72),
             const SizedBox(height: 24),
             const CircularProgressIndicator(),
           ],

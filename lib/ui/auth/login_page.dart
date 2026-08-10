@@ -100,7 +100,9 @@ class _LoginPageState extends State<LoginPage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               // App icon / title
-              Icon(Icons.public, size: 72, color: colorScheme.primary),
+              // App logo
+              Image.asset('assets/images/logoTP.png',
+                  width: 72, height: 72),
               const SizedBox(height: 16),
               Text(
                 '跨性别平台',
