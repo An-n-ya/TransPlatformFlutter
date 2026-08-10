@@ -5,6 +5,7 @@ import 'package:trans_platform/ui/posts/interaction.dart';
 import '../../data/repositories/post/post_repository.dart';
 import '../../data/repositories/user/user_repository.dart';
 import '../../data/services/current_user_provider.dart';
+import '../../data/services/global_config_provider.dart';
 import '../../domain/models/post.dart';
 import '../../domain/models/user.dart';
 import '../../utils/result.dart';
@@ -219,6 +220,7 @@ class _PostCardState extends State<PostCard> {
             user: widget.post.author,
             createdAt: widget.post.createdAt,
             location: widget.post.location,
+            postId: '${widget.post.id}',
             trailing: PostCardTrailing(
               isMe: widget.isMe,
               isPinned: isPinned,
@@ -330,6 +332,7 @@ class PostHeader extends StatelessWidget {
   final Widget? trailing;
   final DateTime? createdAt;
   final String? location;
+  final String? postId;
   final VoidCallback? onAvatarTap;
 
   const PostHeader({
@@ -340,6 +343,7 @@ class PostHeader extends StatelessWidget {
     this.trailing,
     this.createdAt,
     this.location,
+    this.postId,
     this.onAvatarTap,
   });
 
@@ -380,6 +384,16 @@ class PostHeader extends StatelessWidget {
                       Text(
                         location!,
                         style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                    if (context.watch<GlobalConfigProvider>().debugMode &&
+                        postId != null) ...[
+                      const SizedBox(width: 8),
+                      Text(
+                        '#$postId',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: cs.primary,
+                            ),
                       ),
                     ],
                   ],
