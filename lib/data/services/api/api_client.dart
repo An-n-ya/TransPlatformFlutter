@@ -14,7 +14,7 @@ import 'page_result.dart';
 /// Manages base URL, JWT authentication, and unified
 /// [ApiResponse] parsing.
 class ApiClient {
-  final String baseUrl;
+  String baseUrl;
   final http.Client _httpClient;
   final Duration _timeout;
   String? _accessToken;
@@ -46,6 +46,11 @@ class ApiClient {
   void clearTokens() {
     _accessToken = null;
     _refreshToken = null;
+  }
+
+  /// Switch the backend server at runtime (debug feature).
+  void setBaseUrl(String url) {
+    baseUrl = url;
   }
 
   // ---- HTTP methods ----

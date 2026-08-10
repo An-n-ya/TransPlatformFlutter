@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:trans_platform/ui/settings/debug/debug_page.dart';
 
 import '../../data/repositories/user/user_repository.dart';
 import '../../data/services/token_storage_service.dart';
@@ -22,6 +23,7 @@ class SettingsPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('设置')),
       body: ListView(
+        padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
         children: [
           // ── User profile card ──
           _buildProfileCard(context),
@@ -35,6 +37,18 @@ class SettingsPage extends StatelessWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const AboutPage()),
+            ),
+          ),
+
+          const Divider(height: 1),
+
+          // ── Debug ──
+          ListTile(
+            leading: const Icon(Icons.bug_report_outlined),
+            title: const Text('调试'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const DebugPage()),
             ),
           ),
 
@@ -137,41 +151,53 @@ class SettingsPage extends StatelessWidget {
     return Image.asset(url, fit: BoxFit.cover, errorBuilder: (_, _, _) => const Icon(Icons.person));
   }
 
-  Future<void> _handleLogout(BuildContext context) async {
-    // Capture references before any async gap
-    final navigator = Navigator.of(context);
-    final storage = context.read<TokenStorageService>();
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('退出登录'),
-        content: const Text('确定要退出登录吗？'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(
-              '退出',
-              style: TextStyle(color: Theme.of(ctx).colorScheme.error),
-            ),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true) return;
-
-    // Clear stored tokens
-    await storage.clearTokens();
-
-    // Navigate back to login, clearing the entire navigation stack
-    navigator.pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const LoginPage()),
-      (_) => false,
-    );
+  Future<void> _handleLogout(BuildContext context) {
+    return handleLogout(context);
   }
+}
+
+/// Shared logout flow with a customizable confirmation dialog.
+///
+/// Clears stored tokens and navigates back to [LoginPage].
+Future<void> handleLogout(
+  BuildContext context, {
+  String title = '退出登录',
+  String message = '确定要退出登录吗？',
+  String confirmLabel = '退出',
+}) async {
+  // Capture references before any async gap
+  final navigator = Navigator.of(context);
+  final storage = context.read<TokenStorageService>();
+
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text(title),
+      content: Text(message),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          child: const Text('取消'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, true),
+          child: Text(
+            confirmLabel,
+            style: TextStyle(color: Theme.of(ctx).colorScheme.error),
+          ),
+        ),
+      ],
+    ),
+  );
+
+  if (confirmed != true) return;
+
+  // Clear stored tokens
+  await storage.clearTokens();
+
+  // Navigate back to login, clearing the entire navigation stack
+  navigator.pushAndRemoveUntil(
+    MaterialPageRoute(builder: (_) => const LoginPage()),
+    (_) => false,
+  );
 }

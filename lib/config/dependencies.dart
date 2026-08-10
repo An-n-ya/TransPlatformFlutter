@@ -16,12 +16,18 @@ import '../data/repositories/user/user_repository_remote.dart';
 import '../data/services/api/api_client.dart';
 import '../data/services/token_storage_service.dart';
 import '../data/services/current_user_provider.dart';
+import '../data/services/global_config_provider.dart';
 import 'env.dart';
 
 final List<SingleChildWidget> _sharedProviders = [
   Provider<TokenStorageService>(create: (_) => TokenStorageService()),
   ChangeNotifierProvider<CurrentUserProvider>(
       create: (_) => CurrentUserProvider()),
+  ChangeNotifierProvider<GlobalConfigProvider>(
+      create: (_) => GlobalConfigProvider(initialBaseUrl: Env.apiBaseUrl)),
+  Provider<ApiClient>(
+    create: (_) => ApiClient(baseUrl: Env.apiBaseUrl),
+  ),
 ];
 
 List<SingleChildWidget> get providersLocal => [
@@ -35,10 +41,6 @@ List<SingleChildWidget> get providersLocal => [
 
 List<SingleChildWidget> get providersRemote => [
       ..._sharedProviders,
-
-      Provider<ApiClient>(
-        create: (_) => ApiClient(baseUrl: Env.apiBaseUrl),
-      ),
 
       ProxyProvider<ApiClient, PostRepository>(
         update: (_, api, _) => PostRepositoryRemote(apiClient: api),
