@@ -87,7 +87,8 @@ class _UserPostsTabState extends State<UserPostsTab> {
           Ok<List<Post>>(:final value) => value.isEmpty
               ? const Center(child: Text('暂无贴文'))
               : Padding(
-                  padding: const EdgeInsets.only(top: 80),
+                  // Cover the full pinned header height (collapsed toolbar + TabBar)
+                  padding: EdgeInsets.only(top: kToolbarHeight + kTextTabBarHeight),
                   child: PostFeed(
                     posts: value,
                     isMe: widget.isMe,
@@ -235,8 +236,10 @@ class _PostListBody extends StatelessWidget {
           Ok<List<Post>>(:final value) => value.isEmpty
               ? const Center(child: Text('暂无内容'))
               : Padding(
-                  padding: const EdgeInsets.only(top: 80),
-                  child: PostFeed(posts: value, isMe: isMe, onRefresh: onRefresh),
+                  // Cover the full pinned header height (collapsed toolbar + TabBar)
+                  padding: EdgeInsets.only(top: kToolbarHeight + kTextTabBarHeight),
+                  child: PostFeed(
+                      posts: value, isMe: isMe, onRefresh: onRefresh),
                 ),
           Error<List<Post>>(:final error) => Center(
               child: Column(
@@ -264,6 +267,7 @@ class _PostListBody extends StatelessWidget {
   }
 }
 
+
 /// Sticky TabBar delegate for the pinned tab bar.
 class UserTabBarDelegate extends SliverPersistentHeaderDelegate {
   final ColorScheme cs;
@@ -271,9 +275,9 @@ class UserTabBarDelegate extends SliverPersistentHeaderDelegate {
   UserTabBarDelegate({required this.cs});
 
   @override
-  double get minExtent => 48;
+  double get minExtent => kTextTabBarHeight;
   @override
-  double get maxExtent => 48;
+  double get maxExtent => kTextTabBarHeight;
 
   @override
   Widget build(
