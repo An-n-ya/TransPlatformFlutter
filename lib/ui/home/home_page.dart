@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:trans_platform/ui/home/search_page.dart';
 
 import '../../data/repositories/notification/notification_repository.dart';
 import '../../utils/result.dart';
@@ -31,8 +32,10 @@ class HomePage extends StatelessWidget {
             ],
           ),
           leading: IconButton(
-            icon: const Icon(Icons.account_circle),
-            onPressed: () {},
+            icon: const Icon(Icons.search),
+            onPressed: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const SearchPage())),
           ),
           actions: <Widget>[
             FutureBuilder<Result<int>>(
@@ -53,8 +56,7 @@ class HomePage extends StatelessWidget {
                         )
                       : const Icon(Icons.notifications),
                   onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                        builder: (_) => const NotificationPage()),
+                    MaterialPageRoute(builder: (_) => const NotificationPage()),
                   ),
                 );
               },

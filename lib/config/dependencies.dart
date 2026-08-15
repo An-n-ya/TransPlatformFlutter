@@ -10,6 +10,9 @@ import '../data/repositories/notification/notification_repository_remote.dart';
 import '../data/repositories/post/post_repository.dart';
 import '../data/repositories/post/post_repository_local.dart';
 import '../data/repositories/post/post_repository_remote.dart';
+import '../data/repositories/search/search_repository.dart';
+import '../data/repositories/search/search_repository_local.dart';
+import '../data/repositories/search/search_repository_remote.dart';
 import '../data/repositories/user/user_repository.dart';
 import '../data/repositories/user/user_repository_local.dart';
 import '../data/repositories/user/user_repository_remote.dart';
@@ -37,6 +40,7 @@ List<SingleChildWidget> get providersLocal => [
       Provider<AuthRepository>(create: (_) => AuthRepositoryLocal()),
       Provider<NotificationRepository>(
           create: (_) => NotificationRepositoryLocal()),
+      Provider<SearchRepository>(create: (_) => SearchRepositoryLocal()),
     ];
 
 List<SingleChildWidget> get providersRemote => [
@@ -53,5 +57,8 @@ List<SingleChildWidget> get providersRemote => [
       ),
       ProxyProvider<ApiClient, NotificationRepository>(
         update: (_, api, _) => NotificationRepositoryRemote(apiClient: api),
+      ),
+      ProxyProvider<ApiClient, SearchRepository>(
+        update: (_, api, _) => SearchRepositoryRemote(apiClient: api),
       ),
     ];
