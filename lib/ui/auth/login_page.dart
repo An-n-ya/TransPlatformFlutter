@@ -7,6 +7,7 @@ import '../../data/services/token_storage_service.dart';
 import '../../domain/models/auth_response.dart';
 import '../../utils/result.dart';
 import '../home/app_shell.dart';
+import '../settings/debug/server_page.dart';
 
 /// Login page with username and password fields.
 ///
@@ -93,6 +94,20 @@ class _LoginPageState extends State<LoginPage> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        actions: [
+          // Server switch entry
+          IconButton(
+            icon: const Icon(Icons.dns_outlined),
+            tooltip: '切换服务器',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ServerPage()),
+            ),
+          ),
+        ],
+      ),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 32),
