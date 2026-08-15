@@ -35,9 +35,9 @@ class SettingsPage extends StatelessWidget {
             leading: const Icon(Icons.info_outline),
             title: const Text('关于'),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const AboutPage()),
-            ),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const AboutPage())),
           ),
 
           const Divider(height: 1),
@@ -47,9 +47,9 @@ class SettingsPage extends StatelessWidget {
             leading: const Icon(Icons.bug_report_outlined),
             title: const Text('调试'),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const DebugPage()),
-            ),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const DebugPage())),
           ),
 
           const Divider(height: 1),
@@ -91,9 +91,7 @@ class SettingsPage extends StatelessWidget {
 
         return InkWell(
           onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => ProfilePage(existingUser: user),
-            ),
+            MaterialPageRoute(builder: (_) => ProfilePage(existingUser: user)),
           ),
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -105,8 +103,11 @@ class SettingsPage extends StatelessWidget {
                     size: const Size(56, 56),
                     child: user?.avatar != null
                         ? _buildAvatar(user!.avatar!)
-                        : Icon(Icons.person, size: 32,
-                            color: Theme.of(context).colorScheme.primary),
+                        : Icon(
+                            Icons.person,
+                            size: 32,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -123,10 +124,11 @@ class SettingsPage extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           user.bio!,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
                               ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -146,9 +148,17 @@ class SettingsPage extends StatelessWidget {
 
   Widget _buildAvatar(String url) {
     if (url.startsWith('http')) {
-      return Image.network(url, fit: BoxFit.cover, errorBuilder: (_, _, _) => const Icon(Icons.person));
+      return Image.network(
+        url,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => const Icon(Icons.person),
+      );
     }
-    return Image.asset(url, fit: BoxFit.cover, errorBuilder: (_, _, _) => const Icon(Icons.person));
+    return Image.asset(
+      url,
+      fit: BoxFit.cover,
+      errorBuilder: (_, _, _) => const Icon(Icons.person),
+    );
   }
 
   Future<void> _handleLogout(BuildContext context) {
@@ -169,31 +179,35 @@ Future<void> handleLogout(
   final navigator = Navigator.of(context);
   final storage = context.read<TokenStorageService>();
 
-  final confirmed = await showDialog<bool>(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      title: Text(title),
-      content: Text(message),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(ctx, false),
-          child: const Text('取消'),
-        ),
-        TextButton(
-          onPressed: () => Navigator.pop(ctx, true),
-          child: Text(
-            confirmLabel,
-            style: TextStyle(color: Theme.of(ctx).colorScheme.error),
+  final is_logged_in = await storage.hasTokens();
+
+  if (is_logged_in) {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
           ),
-        ),
-      ],
-    ),
-  );
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(
+              confirmLabel,
+              style: TextStyle(color: Theme.of(ctx).colorScheme.error),
+            ),
+          ),
+        ],
+      ),
+    );
 
-  if (confirmed != true) return;
+    if (confirmed != true) return;
 
-  // Clear stored tokens
-  await storage.clearTokens();
+    // Clear stored tokens
+    await storage.clearTokens();
+  }
 
   // Navigate back to login, clearing the entire navigation stack
   navigator.pushAndRemoveUntil(
