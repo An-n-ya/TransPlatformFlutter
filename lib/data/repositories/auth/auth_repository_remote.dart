@@ -17,6 +17,7 @@ class AuthRepositoryRemote implements AuthRepository {
     required String username,
     required String nickname,
     required String password,
+    required String invitationCode,
   }) async {
     final result = await _api.post<AuthResponse>(
       '/api/v1/auth/register',
@@ -24,6 +25,7 @@ class AuthRepositoryRemote implements AuthRepository {
         'username': username,
         'nickname': nickname,
         'password': password,
+        'invitationCode': invitationCode,
       },
       fromData: (data) => AuthResponse.fromJson(data as Map<String, dynamic>),
     );

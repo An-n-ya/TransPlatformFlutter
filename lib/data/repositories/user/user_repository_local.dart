@@ -17,6 +17,14 @@ class UserRepositoryLocal implements UserRepository {
   }
 
   @override
+  Future<Result<bool>> checkUsername(String username) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    // A few reserved names are treated as taken in the local mock.
+    const taken = {'admin', 'root', 'taken', 'local'};
+    return Result.ok(!taken.contains(username.toLowerCase()));
+  }
+
+  @override
   Future<Result<User>> updateUser({
     String? nickname,
     String? avatar,

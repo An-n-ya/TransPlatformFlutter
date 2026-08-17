@@ -10,6 +10,7 @@ class AuthRepositoryLocal implements AuthRepository {
     required String username,
     required String nickname,
     required String password,
+    required String invitationCode,
   }) async {
     await Future.delayed(const Duration(milliseconds: 500));
     return Result.ok(

@@ -8,6 +8,7 @@ abstract class AuthRepository {
     required String username,
     required String nickname,
     required String password,
+    required String invitationCode,
   });
 
   /// Log in with username and password.

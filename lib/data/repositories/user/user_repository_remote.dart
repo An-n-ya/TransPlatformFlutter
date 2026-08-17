@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import '../../../domain/models/user.dart';
 import '../../../utils/result.dart';
 import '../../services/api/api_client.dart';
@@ -27,6 +29,27 @@ class UserRepositoryRemote implements UserRepository {
   }
 
   @override
+  Future<Result<bool>> checkUsername(String username) async {
+    return _api.get<bool>(
+      '/api/v1/users/check-username',
+      queryParams: {'username': username},
+      fromData: _parseAvailability,
+    );
+  }
+
+  /// Tolerates `true`/`false`, `{ "available": bool }` or `{ "exists": bool }`.
+  bool _parseAvailability(dynamic data) {
+    if (data is bool) return data;
+    if (data is Map<String, dynamic>) {
+      final available = data['available'];
+      if (available is bool) return available;
+      final exists = data['exists'];
+      if (exists is bool) return !exists;
+    }
+    return true;
+  }
+
+  @override
   Future<Result<User>> updateUser({
     String? nickname,
     String? avatar,
@@ -36,10 +59,21 @@ class UserRepositoryRemote implements UserRepository {
     if (nickname != null) fields['nickname'] = nickname;
     if (bio != null) fields['bio'] = bio;
 
-    return _api.putMultipart<User>(
+    // A local file path means an image picked from the gallery → multipart.
+    if (avatar != null && File(avatar).existsSync()) {
+      return _api.putMultipart<User>(
+        '/api/v1/users/me',
+        fields: fields,
+        avatarPath: avatar,
+        fromData: (data) => User.fromJson(data as Map<String, dynamic>),
+      );
+    }
+
+    // Otherwise the avatar is plain text (emoji preset, URL, ...) → JSON.
+    if (avatar != null) fields['avatar'] = avatar;
+    return _api.put<User>(
       '/api/v1/users/me',
-      fields: fields,
-      avatarPath: avatar,
+      body: fields,
       fromData: (data) => User.fromJson(data as Map<String, dynamic>),
     );
   }

@@ -9,6 +9,9 @@ abstract class UserRepository {
   /// Get a user by their ID.
   Future<Result<User>> getUser(int userId);
 
+  /// Check whether a username is still available for registration.
+  Future<Result<bool>> checkUsername(String username);
+
   /// Update the current user's profile.
   Future<Result<User>> updateUser({
     String? nickname,
