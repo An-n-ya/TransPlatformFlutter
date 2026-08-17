@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:trans_platform/ui/posts/interaction.dart';
 
 import '../../data/repositories/post/post_repository.dart';
 import '../../data/repositories/user/user_repository.dart';
@@ -11,7 +10,10 @@ import '../../domain/models/user.dart';
 import '../../utils/result.dart';
 import '../../utils/time.dart';
 import '../user/user_detail_page.dart';
-import 'photo_grid.dart';
+import '../widgets/post_image_grid.dart';
+import '../widgets/stat_button.dart';
+import '../widgets/topic_chip.dart';
+import '../widgets/user_avatar.dart';
 import 'post_detail_page.dart';
 
 /// Tracks user-initiated interaction overrides per post.
@@ -210,41 +212,154 @@ class _PostCardState extends State<PostCard> {
             .watch<CurrentUserProvider>()
             .pinnedPostId ==
         widget.post.id;
-    return Card(
+    final post = widget.post;
+    return Container(
       margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0x22CAC4D0)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x1A000000),
+            offset: Offset(0, 1),
+            blurRadius: 3,
+          ),
+          BoxShadow(
+            color: Color(0x1A000000),
+            offset: Offset(0, 1),
+            blurRadius: 2,
+            spreadRadius: -1,
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Header ──
-          PostHeader(
-            user: widget.post.author,
-            createdAt: widget.post.createdAt,
-            location: widget.post.location,
-            postId: '${widget.post.id}',
-            trailing: PostCardTrailing(
-              isMe: widget.isMe,
-              isPinned: isPinned,
-              onDelete: _deletePost,
-              onTogglePin: _togglePin,
-            ),
-          ),
-
-          PostContent(content: widget.post.content, images: widget.post.images),
-
-          // ── Action buttons ──
-          InteractionBar(
-            liked: _liked,
-            collected: _collected,
-            likesCount: _likesCount,
-            collectionsCount: _collectionsCount,
-            commentsCount: widget.post.commentsCount,
-            onLike: _toggleLike,
-            onCollect: _toggleCollect,
-            onComment: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => PostDetailPage(post: widget.post),
+          _buildHeader(context, post, isPinned),
+          if (post.content.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+              child: Text(
+                post.content,
+                style: const TextStyle(
+                  fontSize: 14,
+                  height: 22 / 14,
+                  color: Color(0xFF1D1B20),
+                ),
               ),
             ),
+          if (post.topics.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  for (final topic in post.topics) TopicChip(topic: topic),
+                ],
+              ),
+            ),
+          if (post.images.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: PostImageGrid(images: post.images),
+            ),
+          // ── Card divider ──
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: ColoredBox(
+              color: Color(0x55CAC4D0),
+              child: SizedBox(height: 1),
+            ),
+          ),
+          // ── Stats row ──
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+            child: Row(
+              children: [
+                StatButton(
+                  icon: _liked ? Icons.favorite : Icons.favorite_border,
+                  label: '$_likesCount',
+                  color: _liked ? Colors.red : const Color(0xFF1D1B20),
+                  onTap: _toggleLike,
+                ),
+                const SizedBox(width: 20),
+                StatButton(
+                  icon: Icons.mode_comment_outlined,
+                  label: '${post.commentsCount}',
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => PostDetailPage(post: post),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 20),
+                StatButton(
+                  icon: _collected ? Icons.bookmark : Icons.bookmark_border,
+                  label: '$_collectionsCount',
+                  color: _collected ? Colors.amber : const Color(0xFF1D1B20),
+                  onTap: _toggleCollect,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context, Post post, bool isPinned) {
+    final debugMode = context.watch<GlobalConfigProvider>().debugMode;
+    final meta = [
+      formatRelativeTime(post.createdAt),
+      if (post.location != null && post.location!.isNotEmpty) post.location!,
+      if (debugMode) '#${post.id}',
+    ].join(' · ');
+
+    void openAuthor() => Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => UserDetailPage(user: post.author)),
+    );
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 8, 8),
+      child: Row(
+        children: [
+          UserAvatar(user: post.author, onTap: openAuthor),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                GestureDetector(
+                  onTap: openAuthor,
+                  child: Text(
+                    post.author.nickname,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF1D1B20),
+                    ),
+                  ),
+                ),
+                Text(
+                  meta,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF49454F),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          PostCardTrailing(
+            isMe: widget.isMe,
+            isPinned: isPinned,
+            onDelete: _deletePost,
+            onTogglePin: _togglePin,
           ),
         ],
       ),
@@ -498,32 +613,5 @@ class PostCardTrailing extends StatelessWidget {
           const SizedBox(width: 24),
       ],
     );
-  }
-}
-
-class PostContent extends StatelessWidget {
-  final String? content;
-  final List<String>? images;
-  const PostContent({super.key, this.content, this.images});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (content != null)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(content!),
-          ),
-        if (images != null)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: PhotoGrid(images: images!),
-          ),
-      ],
-    );
-
-    // ── Images ──
   }
 }
