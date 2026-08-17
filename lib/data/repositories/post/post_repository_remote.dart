@@ -33,6 +33,26 @@ class PostRepositoryRemote implements PostRepository {
   }
 
   @override
+  Future<Result<List<Post>>> getPostsByTopic(int topicId,
+      {int page = 0, int size = 20}) async {
+    final result = await _api.getPageWithBody<Post>(
+      '/api/v1/posts',
+      body: {'topicId': topicId},
+      queryParams: {
+        'page': page.toString(),
+        'size': size.toString(),
+      },
+      fromItem: (data) => Post.fromJson(data as Map<String, dynamic>),
+    );
+    switch (result) {
+      case Ok<PageResult<Post>>():
+        return Result.ok(result.value.content);
+      case Error<PageResult<Post>>():
+        return Result.error(result.error);
+    }
+  }
+
+  @override
   Future<Result<Post>> getPost(int postId) async {
     return _api.getWithBody<Post>(
       '/api/v1/posts',

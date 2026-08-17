@@ -11,6 +11,7 @@ import '../../domain/models/topic.dart';
 import '../../domain/models/user.dart';
 import '../../utils/result.dart';
 import '../user/user_detail_page.dart';
+import '../posts/topic_detail_page.dart';
 import '../widgets/search_field.dart';
 
 /// Search page — search users and topics by keyword.
@@ -270,7 +271,11 @@ class _SearchPageState extends State<SearchPage> {
           for (final topic in _hotTopics)
             _TopicRow(
               topic: topic,
-              onTap: () => _searchFromTap(topic.name),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => TopicDetailPage(topic: topic),
+                ),
+              ),
             ),
         ],
       ],
@@ -316,7 +321,11 @@ class _SearchPageState extends State<SearchPage> {
           _TopicRow(
             topic: topic,
             keyword: _keyword,
-            onTap: () => _searchFromTap(topic.name),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => TopicDetailPage(topic: topic),
+              ),
+            ),
           ),
       ],
     );

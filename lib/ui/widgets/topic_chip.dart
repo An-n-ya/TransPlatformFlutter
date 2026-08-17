@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/models/topic.dart';
-import '../home/search_page.dart';
+import '../posts/topic_detail_page.dart';
 
 /// Primary-container pill with a tag icon and the topic name.
 ///
-/// Tapping the chip (by default) opens the search page for the topic.
+/// Tapping the chip (by default) opens the topic detail page.
 class TopicChip extends StatelessWidget {
   final Topic topic;
   final VoidCallback? onTap;
@@ -20,7 +20,7 @@ class TopicChip extends StatelessWidget {
           onTap ??
           () => Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (_) => SearchPage(initialKeyword: topic.name),
+              builder: (_) => TopicDetailPage(topic: topic),
             ),
           ),
       child: Container(
