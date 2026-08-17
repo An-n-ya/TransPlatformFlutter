@@ -85,6 +85,47 @@ class ApiClient {
     );
   }
 
+  /// GET request with a JSON body (used by the unified post query endpoint).
+  Future<Result<T>> getWithBody<T>(
+    String path, {
+    Map<String, dynamic>? body,
+    Map<String, String>? queryParams,
+    T Function(dynamic)? fromData,
+  }) async {
+    return _request(
+      () => _sendGetWithBody(path, queryParams, body),
+      fromData,
+    );
+  }
+
+  /// GET request with a JSON body expecting a [PageResult].
+  Future<Result<PageResult<T>>> getPageWithBody<T>(
+    String path, {
+    Map<String, dynamic>? body,
+    Map<String, String>? queryParams,
+    required T Function(dynamic) fromItem,
+  }) async {
+    return _request(
+      () => _sendGetWithBody(path, queryParams, body),
+      (data) => PageResult.fromJson(data as Map<String, dynamic>, fromItem),
+    );
+  }
+
+  /// Builds an [http.Request] with method GET and a JSON body.
+  Future<http.Response> _sendGetWithBody(
+    String path,
+    Map<String, String>? queryParams,
+    Map<String, dynamic>? body,
+  ) async {
+    final request = http.Request('GET', _buildUri(path, queryParams));
+    request.headers.addAll(_headers);
+    if (body != null) {
+      request.body = jsonEncode(body);
+    }
+    final streamed = await _httpClient.send(request).timeout(_timeout);
+    return http.Response.fromStream(streamed);
+  }
+
   /// POST request with JSON body.
   Future<Result<T>> post<T>(
     String path, {
