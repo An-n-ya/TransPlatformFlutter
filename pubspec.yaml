@@ -50,6 +50,9 @@ dependencies:
   # Image picker
   image_picker: ^1.1.2
 
+  # Local key-value storage for recent searches
+  shared_preferences: ^2.5.5
+
   # Easy image viewer
   easy_image_viewer: ^1.0.0
   agora_rtc_engine: ^6.5.4

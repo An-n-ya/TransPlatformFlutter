@@ -13,6 +13,9 @@ import '../data/repositories/post/post_repository_remote.dart';
 import '../data/repositories/search/search_repository.dart';
 import '../data/repositories/search/search_repository_local.dart';
 import '../data/repositories/search/search_repository_remote.dart';
+import '../data/repositories/topic/topic_repository.dart';
+import '../data/repositories/topic/topic_repository_local.dart';
+import '../data/repositories/topic/topic_repository_remote.dart';
 import '../data/repositories/user/user_repository.dart';
 import '../data/repositories/user/user_repository_local.dart';
 import '../data/repositories/user/user_repository_remote.dart';
@@ -41,6 +44,7 @@ List<SingleChildWidget> get providersLocal => [
       Provider<NotificationRepository>(
           create: (_) => NotificationRepositoryLocal()),
       Provider<SearchRepository>(create: (_) => SearchRepositoryLocal()),
+      Provider<TopicRepository>(create: (_) => TopicRepositoryLocal()),
     ];
 
 List<SingleChildWidget> get providersRemote => [
@@ -60,5 +64,8 @@ List<SingleChildWidget> get providersRemote => [
       ),
       ProxyProvider<ApiClient, SearchRepository>(
         update: (_, api, _) => SearchRepositoryRemote(apiClient: api),
+      ),
+      ProxyProvider<ApiClient, TopicRepository>(
+        update: (_, api, _) => TopicRepositoryRemote(apiClient: api),
       ),
     ];

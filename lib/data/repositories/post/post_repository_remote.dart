@@ -1,3 +1,4 @@
+
 import '../../../domain/models/comment.dart';
 import '../../../domain/models/post.dart';
 import '../../../utils/result.dart';
@@ -99,9 +100,13 @@ class PostRepositoryRemote implements PostRepository {
     required String content,
     List<String>? images,
     String? location,
+    List<int>? topicIds,
   }) async {
     final fields = <String, String>{'content': content};
     if (location != null) fields['location'] = location;
+    if (topicIds != null && topicIds.isNotEmpty) {
+      fields['topicIds'] = topicIds.join(',');
+    }
 
     return _api.postMultipart<Post>(
       '/api/v1/posts',

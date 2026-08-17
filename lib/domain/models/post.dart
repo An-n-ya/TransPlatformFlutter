@@ -1,3 +1,4 @@
+import 'topic.dart';
 import 'user.dart';
 
 import '../../utils/image_url.dart';
@@ -31,6 +32,7 @@ class Post {
   final bool isPinned;
   final bool? liked;
   final bool? collected;
+  final List<Topic> topics;
   final DateTime createdAt;
 
   const Post({
@@ -45,6 +47,7 @@ class Post {
     this.isPinned = false,
     this.liked,
     this.collected,
+    this.topics = const [],
     required this.createdAt,
   });
 
@@ -64,6 +67,10 @@ class Post {
       liked: json['liked'] as bool?,
       collected: json['collected'] as bool?,
       isPinned: json['isPinned'] as bool? ?? false,
+      topics: (json['topics'] as List<dynamic>?)
+              ?.map((e) => Topic.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
       createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ??
           DateTime.now(),
     );
@@ -81,6 +88,7 @@ class Post {
         'liked': liked,
         'collected': collected,
         'isPinned': isPinned,
+        'topics': topics.map((t) => t.toJson()).toList(),
         'createdAt': createdAt.toIso8601String(),
       };
 
@@ -97,6 +105,7 @@ class Post {
       isPinned: isPinned ?? this.isPinned,
       liked: liked,
       collected: collected,
+      topics: topics,
       createdAt: createdAt,
     );
   }

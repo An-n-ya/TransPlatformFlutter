@@ -1,16 +1,23 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/repositories/search/search_repository.dart';
+import '../../data/repositories/topic/topic_repository.dart';
+import '../../data/services/recent_search_store.dart';
 import '../../domain/models/search_result.dart';
+import '../../domain/models/topic.dart';
 import '../../domain/models/user.dart';
 import '../../utils/result.dart';
 import '../user/user_detail_page.dart';
+import '../widgets/search_field.dart';
 
 /// Search page — search users and topics by keyword.
 ///
-/// Queries both the `user` and `topic` categories and groups the
-/// results into two sections, following the Search-Mobile design.
+/// The idle state shows recent searches (persisted in SharedPreferences)
+/// and hot topics. Searching queries both the `user` and `topic`
+/// categories and groups the results into two sections.
 class SearchPage extends StatefulWidget {
   /// Keyword to search immediately when the page opens.
   final String? initialKeyword;
@@ -24,17 +31,24 @@ class SearchPage extends StatefulWidget {
 class _SearchPageState extends State<SearchPage> {
   final _controller = TextEditingController();
   final _focusNode = FocusNode();
+  final _recentStore = RecentSearchStore();
 
+  Timer? _debounce;
   String? _keyword;
   SearchResult? _usersResult;
   SearchResult? _topicsResult;
   bool _loading = false;
   bool _hasError = false;
 
+  List<String> _recentSearches = [];
+  List<Topic> _hotTopics = [];
+
   @override
   void initState() {
     super.initState();
     _controller.text = widget.initialKeyword ?? '';
+    _loadRecents();
+    _loadHotTopics();
     final initial = widget.initialKeyword?.trim();
     if (initial != null && initial.isNotEmpty) {
       _search(initial);
@@ -43,9 +57,70 @@ class _SearchPageState extends State<SearchPage> {
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _controller.dispose();
     _focusNode.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadRecents() async {
+    final list = await _recentStore.load();
+    if (!mounted) return;
+    setState(() => _recentSearches = list);
+  }
+
+  Future<void> _loadHotTopics() async {
+    final result = await context.read<TopicRepository>().getHotTopics();
+    if (!mounted) return;
+    setState(() {
+      _hotTopics = switch (result) {
+        Ok<List<Topic>>(:final value) => value,
+        Error<List<Topic>>() => const [],
+      };
+    });
+  }
+
+  void _saveRecent(String keyword) {
+    _recentStore.save(keyword).then((list) {
+      if (mounted) setState(() => _recentSearches = list);
+    });
+  }
+
+  /// Debounced live search: triggered on every keystroke. Cleared text
+  /// returns to the idle state (recent searches + hot topics).
+  void _onSearchChanged(String value) {
+    _debounce?.cancel();
+    final keyword = value.trim();
+    if (keyword.isEmpty) {
+      setState(() {
+        _keyword = null;
+        _usersResult = null;
+        _topicsResult = null;
+        _hasError = false;
+      });
+      return;
+    }
+    _debounce = Timer(
+      const Duration(milliseconds: 350),
+      () => _search(keyword),
+    );
+  }
+
+  /// Commits a search explicitly (keyboard search action): saves the
+  /// keyword to recents and searches immediately.
+  void _submitSearch(String value) {
+    _debounce?.cancel();
+    final keyword = value.trim();
+    if (keyword.isEmpty) return;
+    _saveRecent(keyword);
+    _search(keyword);
+  }
+
+  void _searchFromTap(String keyword) {
+    _controller.text = keyword;
+    _controller.selection = TextSelection.collapsed(offset: keyword.length);
+    _saveRecent(keyword);
+    _search(keyword);
   }
 
   Future<void> _search(String rawKeyword) async {
@@ -79,16 +154,6 @@ class _SearchPageState extends State<SearchPage> {
     });
   }
 
-  void _clear() {
-    _controller.clear();
-    setState(() {
-      _keyword = null;
-      _usersResult = null;
-      _topicsResult = null;
-      _hasError = false;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -98,22 +163,33 @@ class _SearchPageState extends State<SearchPage> {
         child: Column(
           children: [
             // ── Top search bar ──
-            SizedBox(
-              height: 56,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(4, 8, 12, 0),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back),
-                      onPressed: () => Navigator.of(context).pop(),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(4, 6, 4, 8),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back, size: 22),
+                    onPressed: () => Navigator.of(context).pop(),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints.tightFor(
+                      width: 48,
+                      height: 48,
                     ),
-                    Expanded(child: _buildSearchField(cs)),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: SearchField(
+                      controller: _controller,
+                      focusNode: _focusNode,
+                      hintText: '搜索用户、话题...',
+                      onChanged: _onSearchChanged,
+                      onSubmitted: _submitSearch,
+                    ),
+                  ),
+                ],
               ),
             ),
-            // ── Results ──
+            // ── Content ──
             Expanded(child: _buildBody(cs)),
           ],
         ),
@@ -121,244 +197,132 @@ class _SearchPageState extends State<SearchPage> {
     );
   }
 
-  Widget _buildSearchField(ColorScheme cs) {
-    return Container(
-      height: 48,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: TextField(
-        controller: _controller,
-        focusNode: _focusNode,
-        textInputAction: TextInputAction.search,
-        onSubmitted: _search,
-        style: const TextStyle(fontSize: 14),
-        decoration: InputDecoration(
-          hintText: '搜索用户、话题...',
-          hintStyle: TextStyle(color: cs.onSurfaceVariant, fontSize: 14),
-          prefixIcon: Icon(Icons.search, color: cs.onSurfaceVariant),
-          suffixIcon: ValueListenableBuilder<TextEditingValue>(
-            valueListenable: _controller,
-            builder: (_, value, __) => value.text.isEmpty
-                ? const SizedBox.shrink()
-                : IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: _clear,
-                  ),
-          ),
-          border: InputBorder.none,
-          isDense: true,
-          contentPadding: const EdgeInsets.symmetric(vertical: 12),
-        ),
-      ),
-    );
-  }
-
   Widget _buildBody(ColorScheme cs) {
-    if (_keyword == null) return _buildEmptyState(cs);
+    if (_keyword == null) return _buildInitialState(cs);
     if (_loading) return const Center(child: CircularProgressIndicator());
     if (_hasError) return _buildErrorState(cs);
 
     final users = _usersResult?.users ?? const <User>[];
-    // final topics = _topicsResult?.topics ?? const <SearchTopic>[];
-    if (users.isEmpty) return _buildNoResults(cs);
-    // if (users.isEmpty && topics.isEmpty) return _buildNoResults(cs);
+    final topics = _topicsResult?.topics ?? const <Topic>[];
+    if (users.isEmpty && topics.isEmpty) return _buildNoResults(cs);
 
     return ListView(
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       padding: EdgeInsets.zero,
       children: [
-        if (users.isNotEmpty) _buildUserSection(users, cs),
-        // if (topics.isNotEmpty) _buildTopicSection(topics, cs),
+        if (users.isNotEmpty)
+          _buildUserSection(users, _usersResult?.totalElements, cs),
+        if (users.isNotEmpty && topics.isNotEmpty)
+          const ColoredBox(color: Color(0x99DED8E1), child: SizedBox(height: 8)),
+        if (topics.isNotEmpty)
+          _buildTopicSection(topics, _topicsResult?.totalElements, cs),
       ],
     );
   }
 
-  // ── Sections ──
+  // ── Initial state: recent searches + hot topics ──
 
-  Widget _buildUserSection(List<User> users, ColorScheme cs) {
-    return Container(
-      // 8px bottom separator between the user and topic sections
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Color(0xFFDED8E1), width: 8)),
-      ),
-      padding: const EdgeInsets.only(top: 10, bottom: 2),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildSectionHeader('用户', cs),
-          Padding(
-            padding: const EdgeInsets.only(top: 12),
-            child: Column(
-              children: [
-                for (var i = 0; i < users.length; i++) ...[
-                  _buildUserRow(users[i], cs),
-                  if (i < users.length - 1) const SizedBox(height: 12),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget _buildInitialState(ColorScheme cs) {
+    final hasRecent = _recentSearches.isNotEmpty;
+    final hasHot = _hotTopics.isNotEmpty;
 
-  Widget _buildTopicSection(List<SearchTopic> topics, ColorScheme cs) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildSectionHeader('话题', cs),
-          Padding(
-            padding: const EdgeInsets.only(top: 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                for (var i = 0; i < topics.length; i++) ...[
-                  _buildTopicRow(topics[i], cs),
-                  if (i < topics.length - 1) const SizedBox(height: 12),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSectionHeader(String title, ColorScheme cs) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(12, 4, 12, 3),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Color(0xFFCAC4D0))),
-      ),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 14,
-          height: 20 / 14,
-          color: const Color(0xFF49454F),
-        ),
-      ),
-    );
-  }
-
-  // ── Rows ──
-
-  Widget _buildUserRow(User user, ColorScheme cs) {
-    final secondary = user.username.isNotEmpty
-        ? user.username
-        : 'ID: ${user.id}';
-    return InkWell(
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => UserDetailPage(user: user)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        child: Row(
+    if (!hasRecent && !hasHot) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            _buildAvatar(user, cs),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    user.nickname,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: cs.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    secondary,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 14, color: cs.onSurfaceVariant),
-                  ),
-                ],
-              ),
+            Icon(Icons.search, size: 48, color: cs.outlineVariant),
+            const SizedBox(height: 12),
+            Text(
+              '搜索用户或话题',
+              style: TextStyle(fontSize: 14, color: cs.onSurfaceVariant),
             ),
           ],
         ),
-      ),
+      );
+    }
+
+    return ListView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      padding: EdgeInsets.zero,
+      children: [
+        if (hasRecent) ...[
+          const _SectionHeader(
+            title: '最近搜索',
+            padding: EdgeInsets.fromLTRB(12, 6, 12, 14),
+          ),
+          for (final keyword in _recentSearches)
+            _RecentRow(
+              keyword: keyword,
+              onTap: () => _searchFromTap(keyword),
+            ),
+        ],
+        if (hasRecent && hasHot)
+          const ColoredBox(
+            color: Color(0x99DED8E1),
+            child: SizedBox(height: 8),
+          ),
+        if (hasHot) ...[
+          const _SectionHeader(
+            title: '热门话题',
+            padding: EdgeInsets.fromLTRB(12, 6, 12, 14),
+          ),
+          for (final topic in _hotTopics)
+            _TopicRow(
+              topic: topic,
+              onTap: () => _searchFromTap(topic.name),
+            ),
+        ],
+      ],
     );
   }
 
-  Widget _buildTopicRow(SearchTopic topic, ColorScheme cs) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            topic.name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: cs.onSurface,
+  // ── Result sections ──
+
+  Widget _buildUserSection(
+    List<User> users,
+    int? totalElements,
+    ColorScheme cs,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SectionHeader(title: '用户', count: '${totalElements ?? users.length} 个结果'),
+        for (final user in users)
+          _UserRow(
+            user: user,
+            keyword: _keyword,
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => UserDetailPage(user: user)),
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            '${topic.participantsCount} 人参与',
-            style: TextStyle(fontSize: 14, color: cs.onSurfaceVariant),
-          ),
-        ],
-      ),
+      ],
     );
   }
 
-  Widget _buildAvatar(User user, ColorScheme cs) {
-    ImageProvider? image;
-    if (user.avatar != null && user.avatar!.isNotEmpty) {
-      image = user.avatar!.startsWith('http')
-          ? NetworkImage(user.avatar!)
-          : AssetImage(user.avatar!) as ImageProvider;
-    }
-    return CircleAvatar(
-      radius: 20,
-      backgroundColor: cs.primaryContainer,
-      backgroundImage: image,
-      child: image == null
-          ? Text(
-              user.nickname.isNotEmpty ? user.nickname[0].toUpperCase() : '?',
-              style: TextStyle(
-                color: cs.onPrimaryContainer,
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
-            )
-          : null,
+  Widget _buildTopicSection(
+    List<Topic> topics,
+    int? totalElements,
+    ColorScheme cs,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SectionHeader(
+          title: '话题',
+          count: '${totalElements ?? topics.length} 个结果',
+        ),
+        for (final topic in topics)
+          _TopicRow(
+            topic: topic,
+            keyword: _keyword,
+            onTap: () => _searchFromTap(topic.name),
+          ),
+      ],
     );
   }
 
   // ── States ──
-
-  Widget _buildEmptyState(ColorScheme cs) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.search, size: 48, color: cs.outlineVariant),
-          const SizedBox(height: 12),
-          Text(
-            '搜索用户或话题',
-            style: TextStyle(fontSize: 14, color: cs.onSurfaceVariant),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildNoResults(ColorScheme cs) {
     return Center(
@@ -390,4 +354,285 @@ class _SearchPageState extends State<SearchPage> {
       ),
     );
   }
+}
+
+// ── Shared widgets ──
+
+/// Section header — title + optional result count.
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  final String? count;
+  final EdgeInsetsGeometry padding;
+
+  const _SectionHeader({
+    required this.title,
+    this.count,
+    this.padding = const EdgeInsets.fromLTRB(12, 12, 12, 4),
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: padding,
+      child: Row(
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0.96,
+              color: Color(0xFF49454F),
+            ),
+          ),
+          if (count != null) ...[
+            const SizedBox(width: 8),
+            Text(
+              count!,
+              style: const TextStyle(fontSize: 12, color: Color(0xFF79747E)),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// A recent search row — clock icon, keyword, trailing arrow.
+class _RecentRow extends StatelessWidget {
+  final String keyword;
+  final VoidCallback onTap;
+
+  const _RecentRow({required this.keyword, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 19, 12),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: const BoxDecoration(
+                color: Color(0xFFF3EDF7),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.history, size: 18, color: cs.onSurfaceVariant),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                keyword,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF1D1B20),
+                ),
+              ),
+            ),
+            Icon(Icons.north_east, size: 14, color: cs.onSurfaceVariant),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A user result row — avatar, nickname (keyword highlighted), @username.
+class _UserRow extends StatelessWidget {
+  final User user;
+  final String? keyword;
+  final VoidCallback onTap;
+
+  const _UserRow({required this.user, this.keyword, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    ImageProvider? image;
+    if (user.avatar != null && user.avatar!.isNotEmpty) {
+      image = user.avatar!.startsWith('http')
+          ? NetworkImage(user.avatar!)
+          : AssetImage(user.avatar!) as ImageProvider;
+    }
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              clipBehavior: Clip.antiAlias,
+              decoration: const BoxDecoration(
+                color: Color(0xFFEADDFF),
+                shape: BoxShape.circle,
+              ),
+              child: image != null
+                  ? Image(image: image, fit: BoxFit.cover)
+                  : Center(
+                      child: Text(
+                        user.nickname.isNotEmpty
+                            ? user.nickname[0].toUpperCase()
+                            : '?',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF4F378A),
+                        ),
+                      ),
+                    ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text.rich(
+                    TextSpan(
+                      children: _highlightSpans(
+                        user.nickname,
+                        keyword,
+                        cs.primary,
+                        const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    user.username.isNotEmpty
+                        ? '@${user.username}'
+                        : 'ID: ${user.id}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF49454F),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A topic result row — tag icon, name (keyword highlighted), participants.
+class _TopicRow extends StatelessWidget {
+  final Topic topic;
+  final String? keyword;
+  final VoidCallback onTap;
+
+  const _TopicRow({required this.topic, this.keyword, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: const BoxDecoration(
+                color: Color(0xFFE8DEF8),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.tag, size: 18, color: cs.primary),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text.rich(
+                    TextSpan(
+                      children: _highlightSpans(
+                        topic.name,
+                        keyword,
+                        cs.primary,
+                        const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${topic.participantsCount} 人参与',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF49454F),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Builds [TextSpan]s for [text], coloring each occurrence of [keyword]
+/// with [highlightColor].
+List<TextSpan> _highlightSpans(
+  String text,
+  String? keyword,
+  Color highlightColor,
+  TextStyle baseStyle,
+) {
+  if (keyword == null || keyword.isEmpty) {
+    return [TextSpan(text: text, style: baseStyle)];
+  }
+  final lower = text.toLowerCase();
+  final kw = keyword.toLowerCase();
+  final spans = <TextSpan>[];
+  var start = 0;
+  while (true) {
+    final idx = lower.indexOf(kw, start);
+    if (idx == -1) {
+      if (start < text.length) {
+        spans.add(TextSpan(text: text.substring(start), style: baseStyle));
+      }
+      break;
+    }
+    if (idx > start) {
+      spans.add(TextSpan(text: text.substring(start, idx), style: baseStyle));
+    }
+    spans.add(
+      TextSpan(
+        text: text.substring(idx, idx + kw.length),
+        style: baseStyle.copyWith(color: highlightColor),
+      ),
+    );
+    start = idx + kw.length;
+  }
+  return spans;
 }

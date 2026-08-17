@@ -1,4 +1,5 @@
 import '../../../domain/models/search_result.dart';
+import '../../../domain/models/topic.dart';
 import '../../../domain/models/user.dart';
 import '../../../utils/result.dart';
 import 'search_repository.dart';
@@ -34,7 +35,7 @@ class SearchRepositoryLocal implements SearchRepository {
   ];
 
   final _mockTopics = const [
-    SearchTopic(id: 1, name: 'Topic 1', participantsCount: 15),
-    SearchTopic(id: 2, name: 'Topic 2', participantsCount: 1),
+    Topic(id: 1, name: 'Topic 1', participantsCount: 15),
+    Topic(id: 2, name: 'Topic 2', participantsCount: 1),
   ];
 }

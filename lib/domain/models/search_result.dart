@@ -1,38 +1,5 @@
+import 'topic.dart';
 import 'user.dart';
-
-/// Topic search result item matching the backend topic VO.
-class SearchTopic {
-  final int id;
-  final String name;
-  final int participantsCount;
-
-  const SearchTopic({
-    required this.id,
-    required this.name,
-    this.participantsCount = 0,
-  });
-
-  factory SearchTopic.fromJson(Map<String, dynamic> json) {
-    return SearchTopic(
-      id: json['id'] as int? ?? 0,
-      name: (json['name'] ?? json['title'] ?? json['topicName'] ?? '')
-          as String? ?? '',
-      participantsCount:
-          (json['participantsCount'] ??
-                  json['participants'] ??
-                  json['followerCount'] ??
-                  0)
-              as int? ??
-          0,
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'participantsCount': participantsCount,
-      };
-}
 
 /// Unified result of a single search request.
 ///
@@ -42,7 +9,7 @@ class SearchResult {
   final String category;
   final String keyword;
   final List<User> users;
-  final List<SearchTopic> topics;
+  final List<Topic> topics;
 
   // Pagination metadata.
   final int page;
@@ -79,7 +46,7 @@ class SearchResult {
           : const [],
       topics: category == 'topic'
           ? content
-                .map((e) => SearchTopic.fromJson(e as Map<String, dynamic>))
+                .map((e) => Topic.fromJson(e as Map<String, dynamic>))
                 .toList()
           : const [],
       page: pageData['page'] as int? ?? 0,

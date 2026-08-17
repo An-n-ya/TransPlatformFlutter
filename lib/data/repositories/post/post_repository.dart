@@ -29,6 +29,7 @@ abstract class PostRepository {
     required String content,
     List<String>? images,
     String? location,
+    List<int>? topicIds,
   });
 
   /// Delete a post.

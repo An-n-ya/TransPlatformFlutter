@@ -49,6 +49,7 @@ class PostRepositoryLocal implements PostRepository {
     required String content,
     List<String>? images,
     String? location,
+    List<int>? topicIds,
   }) async {
     await Future.delayed(const Duration(milliseconds: 200));
     return Result.ok(
