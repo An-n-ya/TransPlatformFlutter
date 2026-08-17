@@ -8,9 +8,9 @@ import 'package:permission_handler/permission_handler.dart';
 const appId = "6c65142d2fcb4d808b7539581e95b0fd";
 // Fill in the temporary token generated from Agora Console
 const token =
-    "007eJxTYFik71H/51Nas5lSlI1v9ayQI2bS1QqHl04+tEL1n+NCTl4FBrNkM1NDE6MUo7TkJJMUCwOLJHNTY0tTC8NUS9Mkg7QUkwW5WQ2BjAwfNl5nYmJgBEMQn5UhMS+vMpGBgQkuxMJgaGBgCAABryCl";
+    "007eJxTYJA+9uNpR87bS/lWfQtLGey5RIJXF1p6z+QMSjjx0pm3QEaBwSzZzNTQxCjFKC05ySTFwsAiydzU2NLUwjDV0jTJIC1lZ1pDVkMgI8P/AjtGJgZGMATxeRhSUnPzdZMzEvPyUnMYGJjgMiwMhgYGhgD2hiJ+";
 // Fill in the channel name you used to generate the token
-const channel = "annya";
+const channel = "demo-channel";
 
 /// Voice call page using Agora RTC.
 ///
