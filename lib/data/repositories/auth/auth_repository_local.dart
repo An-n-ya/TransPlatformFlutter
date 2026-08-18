@@ -68,4 +68,20 @@ class AuthRepositoryLocal implements AuthRepository {
       ),
     );
   }
+
+  @override
+  Future<Result<void>> sendPasswordResetCode({required String email}) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    return const Result.ok(null);
+  }
+
+  @override
+  Future<Result<void>> resetPassword({
+    required String email,
+    required String code,
+    required String newPassword,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    return const Result.ok(null);
+  }
 }

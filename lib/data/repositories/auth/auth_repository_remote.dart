@@ -75,4 +75,28 @@ class AuthRepositoryRemote implements AuthRepository {
     }
     return result;
   }
+
+  @override
+  Future<Result<void>> sendPasswordResetCode({required String email}) async {
+    return _api.post<void>(
+      '/api/v1/auth/password/send-reset-code',
+      body: {'email': email},
+    );
+  }
+
+  @override
+  Future<Result<void>> resetPassword({
+    required String email,
+    required String code,
+    required String newPassword,
+  }) async {
+    return _api.post<void>(
+      '/api/v1/auth/password/reset',
+      body: {
+        'email': email,
+        'code': code,
+        'newPassword': newPassword,
+      },
+    );
+  }
 }

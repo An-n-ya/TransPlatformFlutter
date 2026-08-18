@@ -8,6 +8,7 @@ import '../../domain/models/auth_response.dart';
 import '../../utils/result.dart';
 import '../home/app_shell.dart';
 import '../settings/debug/server_page.dart';
+import 'forgot_password_page.dart';
 import 'register_page.dart';
 
 /// Login page with username and password fields.
@@ -224,7 +225,10 @@ class _LoginPageState extends State<LoginPage> {
         Align(
           alignment: Alignment.centerRight,
           child: TextButton(
-            onPressed: () {},
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                  builder: (_) => const ForgotPasswordPage()),
+            ),
             style: TextButton.styleFrom(
               foregroundColor: const Color(0xFF6750A4),
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

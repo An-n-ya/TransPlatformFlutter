@@ -19,4 +19,14 @@ abstract class AuthRepository {
 
   /// Refresh the access token using a refresh token.
   Future<Result<AuthResponse>> refreshToken(String refreshToken);
+
+  /// Send a password reset code to the specified email.
+  Future<Result<void>> sendPasswordResetCode({required String email});
+
+  /// Reset the password using the verification code.
+  Future<Result<void>> resetPassword({
+    required String email,
+    required String code,
+    required String newPassword,
+  });
 }
