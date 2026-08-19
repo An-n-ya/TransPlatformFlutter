@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -50,10 +51,17 @@ class _AddPostPageState extends State<AddPostPage> {
   Future<void> _pickImages() async {
     final images = await _picker.pickMultiImage(
       imageQuality: 85,
-      limit: 9,
+      // 部分平台不支持 limit 选项，可能一次返回超过剩余数量的图片；
+      // 这里兜底：超出 9 张时只保留最近选择的 9 张。
+      limit: max(0, 9 - _selectedImages.length),
     );
     if (images.isNotEmpty) {
-      setState(() => _selectedImages.addAll(images));
+      setState(() {
+        _selectedImages.addAll(images);
+        if (_selectedImages.length > 9) {
+          _selectedImages.removeRange(0, _selectedImages.length - 9);
+        }
+      });
     }
   }
 
@@ -411,27 +419,45 @@ class _AddPostPageState extends State<AddPostPage> {
   }
 
   Widget _buildImageSection(ColorScheme cs) {
+    const spacing = 4.0;
+    final tileCount =
+        _selectedImages.length + (_selectedImages.length < 9 ? 1 : 0);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            height: 80,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: _selectedImages.length + 1,
-              separatorBuilder: (_, _) => const SizedBox(width: 8),
-              itemBuilder: (context, index) {
-                if (index == _selectedImages.length) {
-                  return _AddPhotoTile(onTap: _pickImages);
-                }
-                return _ImagePreview(
-                  file: _selectedImages[index],
-                  onDelete: () => _removeImage(index),
-                );
-              },
-            ),
+          // 网格高度跟随内容：根据可用宽度算出每格边长，再按行数计算总高度，
+          // 保证每个格子都是正方形，且整体高度随图片数量自适应。
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final tileSize = (constraints.maxWidth - spacing * 2) / 3;
+              final rowCount = (tileCount / 3).ceil();
+              final gridHeight =
+                  rowCount * tileSize + (rowCount - 1) * spacing;
+              return SizedBox(
+                height: gridHeight,
+                child: GridView.builder(
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    mainAxisSpacing: spacing,
+                    crossAxisSpacing: spacing,
+                  ),
+                  itemCount: tileCount,
+                  itemBuilder: (context, index) {
+                    if (index == _selectedImages.length &&
+                        _selectedImages.length < 9) {
+                      return _AddPhotoTile(onTap: _pickImages);
+                    }
+                    return _ImagePreview(
+                      file: _selectedImages[index],
+                      onDelete: () => _removeImage(index),
+                    );
+                  },
+                ),
+              );
+            },
           ),
           const SizedBox(height: 6),
           Text(
@@ -454,40 +480,38 @@ class _ImagePreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(14),
-          child: Image.file(
+    // 自适应填充网格格子，尺寸跟随网格单元格，不固定为 80。
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(14),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.file(
             File(file.path),
-            width: 80,
-            height: 80,
             fit: BoxFit.cover,
             errorBuilder: (_, _, _) => Container(
-              width: 80,
-              height: 80,
               color: Theme.of(context).colorScheme.surfaceContainerHighest,
               child: const Icon(Icons.broken_image),
             ),
           ),
-        ),
-        Positioned(
-          top: 4,
-          right: 4,
-          child: GestureDetector(
-            onTap: onDelete,
-            child: Container(
-              width: 20,
-              height: 20,
-              decoration: const BoxDecoration(
-                color: Colors.black54,
-                shape: BoxShape.circle,
+          Positioned(
+            top: 4,
+            right: 4,
+            child: GestureDetector(
+              onTap: onDelete,
+              child: Container(
+                width: 20,
+                height: 20,
+                decoration: const BoxDecoration(
+                  color: Colors.black54,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.close, size: 12, color: Colors.white),
               ),
-              child: const Icon(Icons.close, size: 12, color: Colors.white),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -565,8 +589,7 @@ class _AddPhotoTile extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(14),
       child: Container(
-        width: 80,
-        height: 80,
+        // 不固定尺寸，自适应填满网格单元格。
         decoration: BoxDecoration(
           color: cs.surfaceDim,
           borderRadius: BorderRadius.circular(14),
