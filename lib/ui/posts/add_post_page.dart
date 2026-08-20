@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:math';
 
+import 'package:easy_image_viewer/easy_image_viewer.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -486,12 +487,23 @@ class _ImagePreview extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          Image.file(
-            File(file.path),
-            fit: BoxFit.cover,
-            errorBuilder: (_, _, _) => Container(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              child: const Icon(Icons.broken_image),
+          // 点击图片时，使用 easy_image_viewer 的 showImageViewer 预览图片，
+          // 支持双击缩放与滑动关闭。删除按钮的 GestureDetector 在内层，会优先响应点击，
+          // 因此不会误触到预览。
+          GestureDetector(
+            onTap: () => showImageViewer(
+              context,
+              Image.file(File(file.path)).image,
+              swipeDismissible: true,
+              doubleTapZoomable: true,
+            ),
+            child: Image.file(
+              File(file.path),
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => Container(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                child: const Icon(Icons.broken_image),
+              ),
             ),
           ),
           Positioned(
