@@ -188,6 +188,7 @@ class UserCoverImage extends StatelessWidget {
           height: 236,
           child: Image.network(
             coverUrl!,
+            width: double.infinity,
             fit: BoxFit.cover,
             errorBuilder: (_, _, _) => _fallbackCover(cs),
             loadingBuilder: (_, child, progress) =>
@@ -199,6 +200,7 @@ class UserCoverImage extends StatelessWidget {
         height: 236,
         child: Image.asset(
           coverUrl!,
+          width: double.infinity,
           fit: BoxFit.cover,
           errorBuilder: (_, _, _) => _fallbackCover(cs),
         ),

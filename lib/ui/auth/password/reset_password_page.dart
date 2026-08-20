@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../data/repositories/auth/auth_repository.dart';
-import '../../utils/result.dart';
-import '../widgets/step_progress_indicator.dart';
+import '../../../data/repositories/auth/auth_repository.dart';
+import '../../../utils/result.dart';
+import '../../widgets/step_progress_indicator.dart';
 import 'reset_password_success_page.dart';
 
 class ResetPasswordPage extends StatefulWidget {

@@ -29,8 +29,24 @@ class UserRepositoryLocal implements UserRepository {
     String? nickname,
     String? avatar,
     String? bio,
+    String? bioHeaderImg,
   }) async {
     await Future.delayed(const Duration(milliseconds: 200));
+    return Result.ok(_demoUser);
+  }
+
+  @override
+  Future<Result<void>> sendEmailVerificationCode({required String email}) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    return const Result.ok(null);
+  }
+
+  @override
+  Future<Result<User>> verifyEmail({
+    required String email,
+    required String code,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 500));
     return Result.ok(_demoUser);
   }
 

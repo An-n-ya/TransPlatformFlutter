@@ -17,6 +17,16 @@ abstract class UserRepository {
     String? nickname,
     String? avatar,
     String? bio,
+    String? bioHeaderImg,
+  });
+
+  /// Send a verification code to the given email for email binding.
+  Future<Result<void>> sendEmailVerificationCode({required String email});
+
+  /// Verify the email with the given code and bind it to the current user.
+  Future<Result<User>> verifyEmail({
+    required String email,
+    required String code,
   });
 
   /// Follow a user.

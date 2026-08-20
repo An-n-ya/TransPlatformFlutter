@@ -8,7 +8,7 @@ import '../../domain/models/auth_response.dart';
 import '../../utils/result.dart';
 import '../home/app_shell.dart';
 import '../settings/debug/server_page.dart';
-import 'forgot_password_page.dart';
+import 'password/forgot_password_page.dart';
 import 'register_page.dart';
 
 /// Login page with username and password fields.

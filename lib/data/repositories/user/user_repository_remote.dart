@@ -54,10 +54,12 @@ class UserRepositoryRemote implements UserRepository {
     String? nickname,
     String? avatar,
     String? bio,
+    String? bioHeaderImg,
   }) async {
     final fields = <String, String>{};
     if (nickname != null) fields['nickname'] = nickname;
     if (bio != null) fields['bio'] = bio;
+    if (bioHeaderImg != null) fields['bioHeaderImg'] = bioHeaderImg;
 
     // A local file path means an image picked from the gallery → multipart.
     if (avatar != null && File(avatar).existsSync()) {
@@ -74,6 +76,26 @@ class UserRepositoryRemote implements UserRepository {
     return _api.put<User>(
       '/api/v1/users/me',
       body: fields,
+      fromData: (data) => User.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
+  @override
+  Future<Result<void>> sendEmailVerificationCode({required String email}) async {
+    return _api.post<void>(
+      '/api/v1/users/me/email/send-code',
+      body: {'email': email},
+    );
+  }
+
+  @override
+  Future<Result<User>> verifyEmail({
+    required String email,
+    required String code,
+  }) async {
+    return _api.post<User>(
+      '/api/v1/users/me/email/verify',
+      body: {'email': email, 'code': code},
       fromData: (data) => User.fromJson(data as Map<String, dynamic>),
     );
   }

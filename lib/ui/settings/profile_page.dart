@@ -7,10 +7,11 @@ import 'package:provider/provider.dart';
 import '../../data/repositories/user/user_repository.dart';
 import '../../domain/models/user.dart';
 import '../../utils/result.dart';
+import 'reset_email_page.dart';
 
 /// Edit user profile page.
 ///
-/// Allows changing nickname and bio.
+/// Allows changing nickname, bio, avatar, bio header image, and email.
 class ProfilePage extends StatefulWidget {
   final User? existingUser;
 
@@ -25,6 +26,7 @@ class _ProfilePageState extends State<ProfilePage> {
   late TextEditingController _nicknameController;
   late TextEditingController _bioController;
   XFile? _pickedAvatar;
+  XFile? _pickedBioHeaderImg;
   bool _isSaving = false;
   String? _errorMessage;
 
@@ -54,6 +56,28 @@ class _ProfilePageState extends State<ProfilePage> {
     if (image != null) setState(() => _pickedAvatar = image);
   }
 
+  Future<void> _pickBioHeaderImg() async {
+    final image = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+      maxWidth: 1080,
+      maxHeight: 360,
+    );
+    if (image != null) setState(() => _pickedBioHeaderImg = image);
+  }
+
+  Future<void> _navigateToResetEmail() async {
+    final hasEmail = widget.existingUser?.email != null &&
+        widget.existingUser!.email!.isNotEmpty;
+    final result = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => ResetEmailPage(isUpdate: hasEmail)),
+    );
+    if (result == true && mounted) {
+      // Email was updated — pop profile page to trigger refresh.
+      if (mounted) Navigator.of(context).pop(true);
+    }
+  }
+
   Future<void> _save() async {
     final nickname = _nicknameController.text.trim();
     final bio = _bioController.text.trim();
@@ -72,6 +96,7 @@ class _ProfilePageState extends State<ProfilePage> {
           nickname: nickname,
           avatar: _pickedAvatar?.path,
           bio: bio.isNotEmpty ? bio : null,
+          bioHeaderImg: _pickedBioHeaderImg?.path,
         );
 
     if (!mounted) return;
@@ -171,11 +196,92 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           const SizedBox(height: 16),
 
+          // Bio header image
+          _buildBioHeaderImgSection(theme),
+          const SizedBox(height: 16),
+
+          // Email
+          _buildEmailRow(theme),
+          const SizedBox(height: 16),
+
           // Error
           if (_errorMessage != null)
             Text(_errorMessage!,
                 style: TextStyle(color: theme.colorScheme.error)),
         ],
+      ),
+    );
+  }
+
+  Widget _buildBioHeaderImgSection(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('背景图片', style: theme.textTheme.bodyMedium),
+        const SizedBox(height: 8),
+        GestureDetector(
+          onTap: _isSaving ? null : _pickBioHeaderImg,
+          child: Container(
+            width: double.infinity,
+            height: 120,
+            decoration: BoxDecoration(
+              border: Border.all(color: theme.colorScheme.outline),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: _buildBioHeaderImgWidget(theme),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBioHeaderImgWidget(ThemeData theme) {
+    if (_pickedBioHeaderImg != null) {
+      return Image.file(
+        File(_pickedBioHeaderImg!.path),
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => _placeholderBioHeaderImg(theme),
+      );
+    }
+    final url = widget.existingUser?.bioHeaderImg;
+    if (url != null && url.isNotEmpty) {
+      if (url.startsWith('http')) {
+        return Image.network(url, fit: BoxFit.cover,
+            errorBuilder: (_, _, _) => _placeholderBioHeaderImg(theme));
+      }
+      return Image.asset(url, fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => _placeholderBioHeaderImg(theme));
+    }
+    return _placeholderBioHeaderImg(theme);
+  }
+
+  Widget _placeholderBioHeaderImg(ThemeData theme) {
+    return Center(
+      child: Icon(Icons.add_photo_alternate_outlined,
+          size: 40, color: theme.colorScheme.outline),
+    );
+  }
+
+  Widget _buildEmailRow(ThemeData theme) {
+    final email = widget.existingUser?.email;
+    return InkWell(
+      onTap: _isSaving ? null : _navigateToResetEmail,
+      borderRadius: BorderRadius.circular(8),
+      child: InputDecorator(
+        decoration: const InputDecoration(
+          labelText: '邮箱',
+          border: OutlineInputBorder(),
+          suffixIcon: Icon(Icons.chevron_right),
+        ),
+        child: Text(
+          email != null && email.isNotEmpty ? email : '点击绑定邮箱',
+          style: TextStyle(
+            color: email != null && email.isNotEmpty
+                ? null
+                : theme.colorScheme.outline,
+          ),
+        ),
       ),
     );
   }

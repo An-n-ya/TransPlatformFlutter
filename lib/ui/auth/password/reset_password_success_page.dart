@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../widgets/step_progress_indicator.dart';
-import 'login_page.dart';
+import '../../widgets/step_progress_indicator.dart';
+import '../login_page.dart';
 
 class ResetPasswordSuccessPage extends StatelessWidget {
   const ResetPasswordSuccessPage({super.key});
