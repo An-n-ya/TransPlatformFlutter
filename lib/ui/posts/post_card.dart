@@ -90,10 +90,7 @@ class _PostFeedState extends State<PostFeed> {
     final onRefresh = widget.onRefresh;
     if (onRefresh == null) return listView;
 
-    return RefreshIndicator(
-      onRefresh: onRefresh,
-      child: listView,
-    );
+    return RefreshIndicator(onRefresh: onRefresh, child: listView);
   }
 }
 
@@ -102,6 +99,12 @@ class PostCard extends StatefulWidget {
   final Post post;
   final bool isMe;
   final VoidCallback? onPostDeleted;
+  final Widget? trailing;
+  final VoidCallback? onCommentTap;
+
+  /// Whether tapping a non-interactive area of the card opens the post
+  /// detail page. Disabled inside [PostDetailPage] to avoid re-entry.
+  final bool openDetailOnTap;
   final bool initialLiked;
   final bool initialCollected;
   final int initialLikesCount;
@@ -119,6 +122,9 @@ class PostCard extends StatefulWidget {
     required this.post,
     this.isMe = false,
     this.onPostDeleted,
+    this.trailing,
+    this.onCommentTap,
+    this.openDetailOnTap = true,
     this.initialLiked = false,
     this.initialCollected = false,
     this.initialLikesCount = 0,
@@ -151,6 +157,12 @@ class _PostCardState extends State<PostCard> {
       _collected,
       _likesCount,
       _collectionsCount,
+    );
+  }
+
+  void _openDetail() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => PostDetailPage(post: widget.post)),
     );
   }
 
@@ -208,10 +220,8 @@ class _PostCardState extends State<PostCard> {
 
   @override
   Widget build(BuildContext context) {
-    final isPinned = context
-            .watch<CurrentUserProvider>()
-            .pinnedPostId ==
-        widget.post.id;
+    final isPinned =
+        context.watch<CurrentUserProvider>().pinnedPostId == widget.post.id;
     final post = widget.post;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -234,78 +244,81 @@ class _PostCardState extends State<PostCard> {
         ],
       ),
       clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildHeader(context, post, isPinned),
-          if (post.content.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-              child: Text(
-                post.content,
-                style: const TextStyle(
-                  fontSize: 14,
-                  height: 22 / 14,
-                  color: Color(0xFF1D1B20),
-                ),
-              ),
-            ),
-          if (post.topics.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-              child: Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: [
-                  for (final topic in post.topics) TopicChip(topic: topic),
-                ],
-              ),
-            ),
-          if (post.images.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-              child: PostImageGrid(images: post.images),
-            ),
-          // ── Card divider ──
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            child: ColoredBox(
-              color: Color(0x55CAC4D0),
-              child: SizedBox(height: 1),
-            ),
-          ),
-          // ── Stats row ──
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-            child: Row(
-              children: [
-                StatButton(
-                  icon: _liked ? Icons.favorite : Icons.favorite_border,
-                  label: '$_likesCount',
-                  color: _liked ? Colors.red : const Color(0xFF1D1B20),
-                  onTap: _toggleLike,
-                ),
-                const SizedBox(width: 20),
-                StatButton(
-                  icon: Icons.mode_comment_outlined,
-                  label: '${post.commentsCount}',
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => PostDetailPage(post: post),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: widget.openDetailOnTap ? _openDetail : null,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(context, post, isPinned),
+              if (post.content.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                  child: Text(
+                    post.content,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      height: 22 / 14,
+                      color: Color(0xFF1D1B20),
                     ),
                   ),
                 ),
-                const SizedBox(width: 20),
-                StatButton(
-                  icon: _collected ? Icons.bookmark : Icons.bookmark_border,
-                  label: '$_collectionsCount',
-                  color: _collected ? Colors.amber : const Color(0xFF1D1B20),
-                  onTap: _toggleCollect,
+              if (post.topics.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                  child: Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [
+                      for (final topic in post.topics) TopicChip(topic: topic),
+                    ],
+                  ),
                 ),
-              ],
-            ),
+              if (post.images.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                  child: PostImageGrid(images: post.images),
+                ),
+              // ── Card divider ──
+              const Divider(
+                thickness: 1,
+                indent: 0,
+                endIndent: 0,
+                color: Color(0x55CAC4D0),
+              ),
+              // ── Stats row ──
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+                child: Row(
+                  children: [
+                    StatButton(
+                      icon: _liked ? Icons.favorite : Icons.favorite_border,
+                      label: '$_likesCount',
+                      color: _liked ? Colors.red : const Color(0xFF1D1B20),
+                      onTap: _toggleLike,
+                    ),
+                    const SizedBox(width: 20),
+                    StatButton(
+                      icon: Icons.mode_comment_outlined,
+                      label: '${post.commentsCount}',
+                      onTap: widget.onCommentTap ?? _openDetail,
+                    ),
+                    const SizedBox(width: 20),
+                    StatButton(
+                      icon: _collected ? Icons.bookmark : Icons.bookmark_border,
+                      label: '$_collectionsCount',
+                      color: _collected
+                          ? Colors.amber
+                          : const Color(0xFF1D1B20),
+                      onTap: _toggleCollect,
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -355,12 +368,13 @@ class _PostCardState extends State<PostCard> {
               ],
             ),
           ),
-          PostCardTrailing(
-            isMe: widget.isMe,
-            isPinned: isPinned,
-            onDelete: _deletePost,
-            onTogglePin: _togglePin,
-          ),
+          widget.trailing ??
+              PostCardTrailing(
+                isMe: widget.isMe,
+                isPinned: isPinned,
+                onDelete: _deletePost,
+                onTogglePin: _togglePin,
+              ),
         ],
       ),
     );
@@ -375,23 +389,25 @@ class _PostCardState extends State<PostCard> {
         : await repo.setPinnedPost(widget.post.id);
     if (!mounted) return;
     switch (result) {
-      case Ok<User>():{
-        if (isPinned) {
-          provider.clearPinnedPostId();
-        } else {
-          provider.setPinnedPostId(widget.post.id);
+      case Ok<User>():
+        {
+          if (isPinned) {
+            provider.clearPinnedPostId();
+          } else {
+            provider.setPinnedPostId(widget.post.id);
+          }
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(isPinned ? '已取消置顶' : '已置顶')));
         }
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(isPinned ? '已取消置顶' : '已置顶')),
-        );
-      }
-      case Error<User>():{
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('操作失败')),
-          );
+      case Error<User>():
+        {
+          if (mounted) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(const SnackBar(content: Text('操作失败')));
+          }
         }
-      }
     }
   }
 
@@ -506,9 +522,9 @@ class PostHeader extends StatelessWidget {
                       const SizedBox(width: 8),
                       Text(
                         '#$postId',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: cs.primary,
-                            ),
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodySmall?.copyWith(color: cs.primary),
                       ),
                     ],
                   ],

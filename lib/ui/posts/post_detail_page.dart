@@ -8,13 +8,8 @@ import '../../data/services/current_user_provider.dart';
 import '../../domain/models/comment.dart';
 import '../../domain/models/post.dart';
 import '../../utils/result.dart';
-import '../../utils/time.dart';
 import '../user/user_buttons.dart';
-import '../user/user_detail_page.dart';
-import '../widgets/post_image_grid.dart';
-import '../widgets/stat_button.dart';
-import '../widgets/topic_chip.dart';
-import '../widgets/user_avatar.dart';
+import 'post_card.dart';
 
 /// Post detail page (PostDetail-Mobile design).
 ///
@@ -44,17 +39,10 @@ class _PostDetailPageState extends State<PostDetailPage> {
   bool _isLoadingPost = false;
   String? _loadError;
 
-  // Interaction state
-  late bool _liked;
-  late bool _collected;
-  late int _likesCount;
-  late int _collectionsCount;
-
   @override
   void initState() {
     super.initState();
     _post = widget.post;
-    _initInteractionState();
     _initComments();
     _loadCurrentUser();
     _focusNode.addListener(
@@ -63,13 +51,6 @@ class _PostDetailPageState extends State<PostDetailPage> {
     if (_post == null && widget.postId != null) {
       _fetchPost();
     }
-  }
-
-  void _initInteractionState() {
-    _liked = _post?.liked ?? false;
-    _collected = _post?.collected ?? false;
-    _likesCount = _post?.likesCount ?? 0;
-    _collectionsCount = _post?.collectionsCount ?? 0;
   }
 
   void _initComments() {
@@ -89,7 +70,6 @@ class _PostDetailPageState extends State<PostDetailPage> {
           _post = value;
           _isLoadingPost = false;
         });
-        _initInteractionState();
         _initComments();
         if (mounted) setState(() {});
       case Error<Post>():
@@ -188,44 +168,6 @@ class _PostDetailPageState extends State<PostDetailPage> {
     }
   }
 
-  Future<void> _toggleLike() async {
-    final repo = context.read<PostRepository>();
-    final result = _liked
-        ? await repo.unlikePost(_post!.id)
-        : await repo.likePost(_post!.id);
-    if (!mounted) return;
-    switch (result) {
-      case Ok<void>():
-        setState(() {
-          _liked = !_liked;
-          _likesCount += _liked ? 1 : -1;
-        });
-      case Error<void>():
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('操作失败')));
-    }
-  }
-
-  Future<void> _toggleCollect() async {
-    final repo = context.read<PostRepository>();
-    final result = _collected
-        ? await repo.uncollectPost(_post!.id)
-        : await repo.collectPost(_post!.id);
-    if (!mounted) return;
-    switch (result) {
-      case Ok<void>():
-        setState(() {
-          _collected = !_collected;
-          _collectionsCount += _collected ? 1 : -1;
-        });
-      case Error<void>():
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('操作失败')));
-    }
-  }
-
   // ── Build ──
 
   @override
@@ -249,12 +191,12 @@ class _PostDetailPageState extends State<PostDetailPage> {
             color: cs.onSurface,
           ),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.more_vert, size: 22),
-            onPressed: () {},
-          ),
-        ],
+        // actions: [
+        //   IconButton(
+        //     icon: const Icon(Icons.more_vert, size: 22),
+        //     onPressed: () {},
+        //   ),
+        // ],
       ),
       body: _buildBody(post),
     );
@@ -307,7 +249,25 @@ class _PostDetailPageState extends State<PostDetailPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildPostCard(post),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+                    child: PostCard(
+                      post: post,
+                      isMe: _currentUserId == post.author.id,
+                      openDetailOnTap: false,
+                      initialLiked: post.liked ?? false,
+                      initialCollected: post.collected ?? false,
+                      initialLikesCount: post.likesCount,
+                      initialCollectionsCount: post.collectionsCount,
+                      trailing: _currentUserId == post.author.id
+                          ? null
+                          : UserFollowButton(targetUser: post.author),
+                      onCommentTap: () => _focusNode.requestFocus(),
+                      onPostDeleted: () {
+                        if (mounted) Navigator.of(context).pop();
+                      },
+                    ),
+                  ),
                   // ── Section divider ──
                   const Padding(
                     padding: EdgeInsets.fromLTRB(20, 12, 20, 0),
@@ -327,159 +287,6 @@ class _PostDetailPageState extends State<PostDetailPage> {
           onSend: _sendComment,
         ),
       ],
-    );
-  }
-
-  // ── Post card ──
-
-  Widget _buildPostCard(Post post) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(20, 4, 20, 0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0x22CAC4D0)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x1A000000),
-            offset: Offset(0, 1),
-            blurRadius: 3,
-          ),
-          BoxShadow(
-            color: Color(0x1A000000),
-            offset: Offset(0, 1),
-            blurRadius: 2,
-            spreadRadius: -1,
-          ),
-        ],
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildCardHeader(post),
-          if (post.content.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-              child: Text(
-                post.content,
-                style: const TextStyle(
-                  fontSize: 14,
-                  height: 22 / 14,
-                  color: Color(0xFF1D1B20),
-                ),
-              ),
-            ),
-          if (post.topics.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-              child: Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: [
-                  for (final topic in post.topics) TopicChip(topic: topic),
-                ],
-              ),
-            ),
-          if (post.images.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-              child: PostImageGrid(images: post.images),
-            ),
-          // ── Card divider ──
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            child: ColoredBox(color: Color(0x55CAC4D0), child: SizedBox(height: 1)),
-          ),
-          _buildStatsRow(post),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCardHeader(Post post) {
-    final meta = [
-      formatRelativeTime(post.createdAt),
-      if (post.location != null && post.location!.isNotEmpty) post.location!,
-    ].join(' · ');
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => UserDetailPage(user: post.author),
-              ),
-            ),
-            child: UserAvatar(user: post.author),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                GestureDetector(
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => UserDetailPage(user: post.author),
-                    ),
-                  ),
-                  child: Text(
-                    post.author.nickname,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF1D1B20),
-                    ),
-                  ),
-                ),
-                Text(
-                  meta,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF49454F),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          UserFollowButton(targetUser: post.author),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatsRow(Post post) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-      child: Row(
-        children: [
-          StatButton(
-            icon: _liked ? Icons.favorite : Icons.favorite_border,
-            label: '$_likesCount',
-            color: _liked ? Colors.red : const Color(0xFF1D1B20),
-            onTap: _toggleLike,
-          ),
-          const SizedBox(width: 20),
-          StatButton(
-            icon: Icons.mode_comment_outlined,
-            label: '${post.commentsCount}',
-            onTap: () => _focusNode.requestFocus(),
-          ),
-          const SizedBox(width: 20),
-          StatButton(
-            icon: _collected ? Icons.bookmark : Icons.bookmark_border,
-            label: '$_collectionsCount',
-            color: _collected ? Colors.amber : const Color(0xFF1D1B20),
-            onTap: _toggleCollect,
-          ),
-        ],
-      ),
     );
   }
 
