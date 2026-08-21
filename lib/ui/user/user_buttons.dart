@@ -1,89 +1,41 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:provider/provider.dart';
 
-import '../../data/repositories/user/user_repository.dart';
 import '../../data/services/current_user_provider.dart';
 import '../../domain/models/user.dart';
-import '../../utils/result.dart';
+import '../../providers/follow_mutation_providers.dart';
 import '../settings/profile_page.dart';
 
-/// Follow / Unfollow button — checks follow status on init.
-class UserFollowButton extends StatefulWidget {
+/// Follow / Unfollow button.
+///
+/// Follow state is read from the SSOT [FollowRelations]; toggling goes through
+/// [FollowMutation] which applies the change optimistically and rolls back on
+/// failure.
+class UserFollowButton extends ConsumerStatefulWidget {
   final User targetUser;
 
   const UserFollowButton({super.key, required this.targetUser});
 
   @override
-  State<UserFollowButton> createState() => _UserFollowButtonState();
+  ConsumerState<UserFollowButton> createState() => _UserFollowButtonState();
 }
 
-class _UserFollowButtonState extends State<UserFollowButton> {
-  bool? _isFollowing;
-  bool? _isMe;
-  bool _loading = true;
-
+class _UserFollowButtonState extends ConsumerState<UserFollowButton> {
   @override
   void initState() {
     super.initState();
-    _checkFollowStatus();
-  }
-
-  Future<void> _checkFollowStatus() async {
-    final provider = context.read<CurrentUserProvider>();
-    final userId = provider.userId;
-    if (userId == null) {
-      if (mounted) setState(() => _loading = false);
-      return;
-    }
-
-    // Lazily load the follow list once and cache it globally
-    if (provider.followeeIds.isEmpty) {
-      final result =
-          await context.read<UserRepository>().getFollowees(userId);
-      if (!mounted) return;
-      switch (result) {
-        case Ok<List<User>>(:final value):
-          provider.setFolloweeIds(value.map((u) => u.id));
-        case Error<List<User>>():
-          if (mounted) setState(() => _loading = false);
-          return;
-      }
-    }
-
-    if (mounted) {
-      setState(() {
-        _isFollowing = provider.isFollowing(widget.targetUser.id);
-        _isMe = userId == widget.targetUser.id;
-        _loading = false;
-      });
-    }
-  }
-
-  Future<void> _toggleFollow() async {
-    final repo = context.read<UserRepository>();
-    final provider = context.read<CurrentUserProvider>();
-    final result = _isFollowing == true
-        ? await repo.unfollow(widget.targetUser.id)
-        : await repo.follow(widget.targetUser.id);
-
-    if (!mounted) return;
-    switch (result) {
-      case Ok<void>():{
-        setState(() => _isFollowing = !(_isFollowing ?? false));
-        if (_isFollowing == true) {
-          provider.addFollowee(widget.targetUser.id);
-        } else {
-          provider.removeFollowee(widget.targetUser.id);
+    // Kick off the one-time followee-list load so follow status is known.
+    // Deferred so the cache/relations are not touched while building.
+    final currentUserId = context.read<CurrentUserProvider>().userId;
+    if (currentUserId != null) {
+      Future(() {
+        if (mounted) {
+          ref
+              .read(followRelationsProvider.notifier)
+              .ensureLoaded(currentUserId);
         }
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_isFollowing == true ? '已关注' : '已取消关注')),
-        );
-      }
-      case Error<void>():{
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('操作失败')),
-        );
-      }
+      });
     }
   }
 
@@ -103,28 +55,40 @@ class _UserFollowButtonState extends State<UserFollowButton> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
     );
 
-    if (_loading) {
+    final currentUserId = context.read<CurrentUserProvider>().userId;
+    final isMe =
+        currentUserId != null && currentUserId == widget.targetUser.id;
+    if (isMe) return const SizedBox.shrink();
+
+    final relations = ref.watch(followRelationsProvider);
+    // While the followee list is still loading, show a spinner. When not
+    // logged in there is nothing to resolve, so fall back to "not following".
+    final showLoading = currentUserId != null && !relations.loaded;
+    final isFollowing = currentUserId != null && relations.isFollowing(widget.targetUser.id);
+
+    if (showLoading) {
       return FilledButton.icon(
         style: style,
         onPressed: null,
         icon: SizedBox(
-          width: 16, height: 16,
+          width: 16,
+          height: 16,
           child: CircularProgressIndicator(strokeWidth: 2, color: cs.onPrimary),
         ),
         label: const SizedBox.shrink(),
       );
     }
-    
-    if (_isMe == true) return const SizedBox.shrink();
 
     return FilledButton.icon(
-      style: _isFollowing == true ? unfollowStyle : style,
-      onPressed: _toggleFollow,
+      style: isFollowing ? unfollowStyle : style,
+      onPressed: () => ref
+          .read(followMutationProvider.notifier)
+          .toggleFollow(widget.targetUser.id),
       icon: Icon(
-        _isFollowing == true ? Icons.person_remove : Icons.person_add_alt,
+        isFollowing ? Icons.person_remove : Icons.person_add_alt,
         size: 18,
       ),
-      label: Text(_isFollowing == true ? '取关' : '关注'),
+      label: Text(isFollowing ? '取关' : '关注'),
     );
   }
 }

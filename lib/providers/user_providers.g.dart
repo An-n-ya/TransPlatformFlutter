@@ -1,0 +1,368 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'user_providers.dart';
+
+// **************************************************************************
+// RiverpodGenerator
+// **************************************************************************
+
+String _$userDetailHash() => r'cdf5aa6b0bc26d1519ad3e24f571c6264c7fb3ca';
+
+/// Copied from Dart SDK
+class _SystemHash {
+  _SystemHash._();
+
+  static int combine(int hash, int value) {
+    // ignore: parameter_assignments
+    hash = 0x1fffffff & (hash + value);
+    // ignore: parameter_assignments
+    hash = 0x1fffffff & (hash + ((0x0007ffff & hash) << 10));
+    return hash ^ (hash >> 6);
+  }
+
+  static int finish(int hash) {
+    // ignore: parameter_assignments
+    hash = 0x1fffffff & (hash + ((0x03ffffff & hash) << 3));
+    // ignore: parameter_assignments
+    hash = hash ^ (hash >> 11);
+    return 0x1fffffff & (hash + ((0x00003fff & hash) << 15));
+  }
+}
+
+abstract class _$UserDetail extends BuildlessAutoDisposeAsyncNotifier<User> {
+  late final int userId;
+
+  FutureOr<User> build(int userId);
+}
+
+/// Loads a single user profile into the user cache.
+///
+/// Serves from the cache (SSOT) when available, otherwise fetches from the
+/// repository and backfills the cache.
+///
+/// Copied from [UserDetail].
+@ProviderFor(UserDetail)
+const userDetailProvider = UserDetailFamily();
+
+/// Loads a single user profile into the user cache.
+///
+/// Serves from the cache (SSOT) when available, otherwise fetches from the
+/// repository and backfills the cache.
+///
+/// Copied from [UserDetail].
+class UserDetailFamily extends Family<AsyncValue<User>> {
+  /// Loads a single user profile into the user cache.
+  ///
+  /// Serves from the cache (SSOT) when available, otherwise fetches from the
+  /// repository and backfills the cache.
+  ///
+  /// Copied from [UserDetail].
+  const UserDetailFamily();
+
+  /// Loads a single user profile into the user cache.
+  ///
+  /// Serves from the cache (SSOT) when available, otherwise fetches from the
+  /// repository and backfills the cache.
+  ///
+  /// Copied from [UserDetail].
+  UserDetailProvider call(int userId) {
+    return UserDetailProvider(userId);
+  }
+
+  @override
+  UserDetailProvider getProviderOverride(
+    covariant UserDetailProvider provider,
+  ) {
+    return call(provider.userId);
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'userDetailProvider';
+}
+
+/// Loads a single user profile into the user cache.
+///
+/// Serves from the cache (SSOT) when available, otherwise fetches from the
+/// repository and backfills the cache.
+///
+/// Copied from [UserDetail].
+class UserDetailProvider
+    extends AutoDisposeAsyncNotifierProviderImpl<UserDetail, User> {
+  /// Loads a single user profile into the user cache.
+  ///
+  /// Serves from the cache (SSOT) when available, otherwise fetches from the
+  /// repository and backfills the cache.
+  ///
+  /// Copied from [UserDetail].
+  UserDetailProvider(int userId)
+    : this._internal(
+        () => UserDetail()..userId = userId,
+        from: userDetailProvider,
+        name: r'userDetailProvider',
+        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+            ? null
+            : _$userDetailHash,
+        dependencies: UserDetailFamily._dependencies,
+        allTransitiveDependencies: UserDetailFamily._allTransitiveDependencies,
+        userId: userId,
+      );
+
+  UserDetailProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.userId,
+  }) : super.internal();
+
+  final int userId;
+
+  @override
+  FutureOr<User> runNotifierBuild(covariant UserDetail notifier) {
+    return notifier.build(userId);
+  }
+
+  @override
+  Override overrideWith(UserDetail Function() create) {
+    return ProviderOverride(
+      origin: this,
+      override: UserDetailProvider._internal(
+        () => create()..userId = userId,
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        userId: userId,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeAsyncNotifierProviderElement<UserDetail, User> createElement() {
+    return _UserDetailProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is UserDetailProvider && other.userId == userId;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, userId.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+mixin UserDetailRef on AutoDisposeAsyncNotifierProviderRef<User> {
+  /// The parameter `userId` of this provider.
+  int get userId;
+}
+
+class _UserDetailProviderElement
+    extends AutoDisposeAsyncNotifierProviderElement<UserDetail, User>
+    with UserDetailRef {
+  _UserDetailProviderElement(super.provider);
+
+  @override
+  int get userId => (origin as UserDetailProvider).userId;
+}
+
+String _$followListHash() => r'0cc85e1ba102b96f7f4e1fd6806dc7707c4fabe7';
+
+abstract class _$FollowList
+    extends BuildlessAutoDisposeAsyncNotifier<List<User>> {
+  late final int userId;
+  late final bool isFollowers;
+
+  FutureOr<List<User>> build({required int userId, required bool isFollowers});
+}
+
+/// Loads the followers (`isFollowers: true`) or followees list of a user.
+///
+/// Always fetches on first build and upserts into the user cache; the UI
+/// renders from [UserCache.getFollowers] / [UserCache.getFollowees].
+///
+/// Copied from [FollowList].
+@ProviderFor(FollowList)
+const followListProvider = FollowListFamily();
+
+/// Loads the followers (`isFollowers: true`) or followees list of a user.
+///
+/// Always fetches on first build and upserts into the user cache; the UI
+/// renders from [UserCache.getFollowers] / [UserCache.getFollowees].
+///
+/// Copied from [FollowList].
+class FollowListFamily extends Family<AsyncValue<List<User>>> {
+  /// Loads the followers (`isFollowers: true`) or followees list of a user.
+  ///
+  /// Always fetches on first build and upserts into the user cache; the UI
+  /// renders from [UserCache.getFollowers] / [UserCache.getFollowees].
+  ///
+  /// Copied from [FollowList].
+  const FollowListFamily();
+
+  /// Loads the followers (`isFollowers: true`) or followees list of a user.
+  ///
+  /// Always fetches on first build and upserts into the user cache; the UI
+  /// renders from [UserCache.getFollowers] / [UserCache.getFollowees].
+  ///
+  /// Copied from [FollowList].
+  FollowListProvider call({required int userId, required bool isFollowers}) {
+    return FollowListProvider(userId: userId, isFollowers: isFollowers);
+  }
+
+  @override
+  FollowListProvider getProviderOverride(
+    covariant FollowListProvider provider,
+  ) {
+    return call(userId: provider.userId, isFollowers: provider.isFollowers);
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'followListProvider';
+}
+
+/// Loads the followers (`isFollowers: true`) or followees list of a user.
+///
+/// Always fetches on first build and upserts into the user cache; the UI
+/// renders from [UserCache.getFollowers] / [UserCache.getFollowees].
+///
+/// Copied from [FollowList].
+class FollowListProvider
+    extends AutoDisposeAsyncNotifierProviderImpl<FollowList, List<User>> {
+  /// Loads the followers (`isFollowers: true`) or followees list of a user.
+  ///
+  /// Always fetches on first build and upserts into the user cache; the UI
+  /// renders from [UserCache.getFollowers] / [UserCache.getFollowees].
+  ///
+  /// Copied from [FollowList].
+  FollowListProvider({required int userId, required bool isFollowers})
+    : this._internal(
+        () => FollowList()
+          ..userId = userId
+          ..isFollowers = isFollowers,
+        from: followListProvider,
+        name: r'followListProvider',
+        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+            ? null
+            : _$followListHash,
+        dependencies: FollowListFamily._dependencies,
+        allTransitiveDependencies: FollowListFamily._allTransitiveDependencies,
+        userId: userId,
+        isFollowers: isFollowers,
+      );
+
+  FollowListProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.userId,
+    required this.isFollowers,
+  }) : super.internal();
+
+  final int userId;
+  final bool isFollowers;
+
+  @override
+  FutureOr<List<User>> runNotifierBuild(covariant FollowList notifier) {
+    return notifier.build(userId: userId, isFollowers: isFollowers);
+  }
+
+  @override
+  Override overrideWith(FollowList Function() create) {
+    return ProviderOverride(
+      origin: this,
+      override: FollowListProvider._internal(
+        () => create()
+          ..userId = userId
+          ..isFollowers = isFollowers,
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        userId: userId,
+        isFollowers: isFollowers,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeAsyncNotifierProviderElement<FollowList, List<User>>
+  createElement() {
+    return _FollowListProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is FollowListProvider &&
+        other.userId == userId &&
+        other.isFollowers == isFollowers;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, userId.hashCode);
+    hash = _SystemHash.combine(hash, isFollowers.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+mixin FollowListRef on AutoDisposeAsyncNotifierProviderRef<List<User>> {
+  /// The parameter `userId` of this provider.
+  int get userId;
+
+  /// The parameter `isFollowers` of this provider.
+  bool get isFollowers;
+}
+
+class _FollowListProviderElement
+    extends AutoDisposeAsyncNotifierProviderElement<FollowList, List<User>>
+    with FollowListRef {
+  _FollowListProviderElement(super.provider);
+
+  @override
+  int get userId => (origin as FollowListProvider).userId;
+  @override
+  bool get isFollowers => (origin as FollowListProvider).isFollowers;
+}
+
+// ignore_for_file: type=lint
+// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

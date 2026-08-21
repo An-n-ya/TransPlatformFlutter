@@ -4,6 +4,9 @@ import '../config/dependencies.dart';
 import '../data/repositories/post/post_repository.dart';
 import '../data/repositories/post/post_repository_local.dart';
 import '../data/repositories/post/post_repository_remote.dart';
+import '../data/repositories/user/user_repository.dart';
+import '../data/repositories/user/user_repository_local.dart';
+import '../data/repositories/user/user_repository_remote.dart';
 import '../data/services/api/api_client.dart';
 
 part 'repository_providers.g.dart';
@@ -31,5 +34,16 @@ PostRepository postRepository(PostRepositoryRef ref) {
       return PostRepositoryLocal();
     case RepositoryMode.remote:
       return PostRepositoryRemote(apiClient: ref.watch(apiClientProvider));
+  }
+}
+
+/// [UserRepository] resolved from [RepositoryMode].
+@riverpod
+UserRepository userRepository(UserRepositoryRef ref) {
+  switch (ref.watch(repositoryModeProvider)) {
+    case RepositoryMode.local:
+      return UserRepositoryLocal();
+    case RepositoryMode.remote:
+      return UserRepositoryRemote(apiClient: ref.watch(apiClientProvider));
   }
 }

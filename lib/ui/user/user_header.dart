@@ -1,19 +1,26 @@
 import 'package:easy_image_viewer/easy_image_viewer.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:trans_platform/ui/user/follow_info_page.dart';
 
+import '../../data/cache/user_cache.dart';
 import '../../domain/models/user.dart';
 import 'user_buttons.dart';
 
 /// Cover image, avatar overlay, user info, and action buttons.
-class UserHeaderSection extends StatelessWidget {
+///
+/// Renders the entity from the SSOT user cache so profile edits / fresh
+/// fetches propagate to every screen automatically.
+class UserHeaderSection extends ConsumerWidget {
   final User user;
   final bool isMe;
 
   const UserHeaderSection({super.key, required this.user, this.isMe = false});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final current =
+        ref.watch(userCacheProvider).getById(user.id) ?? user;
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
@@ -29,7 +36,7 @@ class UserHeaderSection extends StatelessWidget {
             height: 236,
             child: Stack(
               children: [
-                UserCoverImage(coverUrl: user.bioHeaderImg),
+                UserCoverImage(coverUrl: current.bioHeaderImg),
                 Positioned(
                   top: 25,
                   right: 10,
@@ -48,12 +55,12 @@ class UserHeaderSection extends StatelessWidget {
           top: 236,
           right: 10,
           child: isMe
-              ? UserEditProfileButton(user: user)
-              : UserFollowButton(targetUser: user),
+              ? UserEditProfileButton(user: current)
+              : UserFollowButton(targetUser: current),
         ),
 
         // ── Avatar ──
-        Positioned(top: 196, left: 24, child: UserAvatar(user: user)),
+        Positioned(top: 196, left: 24, child: UserAvatar(user: current)),
 
         // ── User info ──
         Positioned(
@@ -64,7 +71,7 @@ class UserHeaderSection extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                user.nickname,
+                current.nickname,
                 style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w500,
                   color: Colors.black,
@@ -72,16 +79,16 @@ class UserHeaderSection extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                '@${user.username}',
+                '@${current.username}',
                 style: theme.textTheme.bodySmall?.copyWith(
                   fontWeight: FontWeight.w500,
                   color: cs.secondary,
                 ),
               ),
-              if (user.bio != null && user.bio!.isNotEmpty) ...[
+              if (current.bio != null && current.bio!.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 Text(
-                  user.bio!,
+                  current.bio!,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: cs.onSurface,
                     letterSpacing: 0.25,
@@ -89,29 +96,29 @@ class UserHeaderSection extends StatelessWidget {
                 ),
               ],
 
-              if (user.followeesCount != null) ...[
+              if (current.followeesCount != null) ...[
                 const SizedBox(height: 8),
                 Row(
                   children: [
                     _StatButton(
-                      count: user.followeesCount ?? 0,
+                      count: current.followeesCount ?? 0,
                       label: '关注',
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (_) => FollowInfoPage(
-                            userId: user.id,
+                            userId: current.id,
                             isFollowerPage: false,
                           ),
                         ),
                       ),
                     ),
                     _StatButton(
-                      count: user.followersCount ?? 0,
+                      count: current.followersCount ?? 0,
                       label: '粉丝',
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (_) => FollowInfoPage(
-                            userId: user.id,
+                            userId: current.id,
                             isFollowerPage: true,
                           ),
                         ),
