@@ -37,14 +37,6 @@ class UserHeaderSection extends ConsumerWidget {
             child: Stack(
               children: [
                 UserCoverImage(coverUrl: current.bioHeaderImg),
-                Positioned(
-                  top: 25,
-                  right: 10,
-                  child: RoundIconButton(
-                    icon: Icons.more_vert,
-                    onPressed: () {},
-                  ),
-                ),
               ],
             ),
           ),
@@ -55,7 +47,7 @@ class UserHeaderSection extends ConsumerWidget {
           top: 236,
           right: 10,
           child: isMe
-              ? UserEditProfileButton(user: current)
+              ? SizedBox.shrink()
               : UserFollowButton(targetUser: current),
         ),
 

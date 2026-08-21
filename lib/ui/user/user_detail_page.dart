@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/cache/user_cache.dart';
 import '../../domain/models/user.dart';
 import '../../providers/user_providers.dart';
+import 'user_buttons.dart';
 import 'user_header.dart';
 import 'user_tabs.dart';
 
@@ -54,24 +55,35 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage> {
           builder: (context, constraints) {
             // Adapt the expanded header height to the available screen space.
             final maxHeader =
-                constraints.maxHeight - kToolbarHeight - kTextTabBarHeight - 120;
-            final expandedHeight =
-                math.min(382.0, math.max(260.0, maxHeader));
+                constraints.maxHeight -
+                kToolbarHeight -
+                kTextTabBarHeight -
+                120;
+            final expandedHeight = math.min(382.0, math.max(260.0, maxHeader));
 
             return NestedScrollView(
               headerSliverBuilder: (context, innerBoxIsScrolled) => [
                 SliverOverlapAbsorber(
-                  handle:
-                      NestedScrollView.sliverOverlapAbsorberHandleFor(context),
+                  handle: NestedScrollView.sliverOverlapAbsorberHandleFor(
+                    context,
+                  ),
                   sliver: SliverAppBar(
                     expandedHeight: expandedHeight,
                     collapsedHeight: kToolbarHeight,
                     floating: false,
                     pinned: true,
                     backgroundColor: cs.surface,
+                    actions: [
+                      Padding(
+                        padding: const EdgeInsets.only(right: 4),
+                        child: UserIconMoreButton(targetUser: user),
+                      ),
+                    ],
                     flexibleSpace: FlexibleSpaceBar(
-                      background:
-                          UserHeaderSection(user: user, isMe: widget.isMe),
+                      background: UserHeaderSection(
+                        user: user,
+                        isMe: widget.isMe,
+                      ),
                     ),
                   ),
                 ),
