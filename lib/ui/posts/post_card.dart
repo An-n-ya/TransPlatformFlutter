@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:provider/provider.dart';
 
-import '../../data/repositories/post/post_repository.dart';
+import '../../data/cache/post_cache.dart';
 import '../../data/repositories/user/user_repository.dart';
 import '../../data/services/current_user_provider.dart';
 import '../../data/services/global_config_provider.dart';
 import '../../domain/models/post.dart';
 import '../../domain/models/user.dart';
+import '../../providers/post_interaction_providers.dart';
 import '../../utils/result.dart';
 import '../../utils/time.dart';
 import '../user/user_detail_page.dart';
@@ -16,21 +18,10 @@ import '../widgets/topic_chip.dart';
 import '../widgets/user_avatar.dart';
 import 'post_detail_page.dart';
 
-/// Tracks user-initiated interaction overrides per post.
-class _PostInteractions {
-  bool liked;
-  bool collected;
-  int likesCount;
-  int collectionsCount;
-
-  _PostInteractions.fromPost(Post post)
-    : liked = post.liked ?? false,
-      collected = post.collected ?? false,
-      likesCount = post.likesCount,
-      collectionsCount = post.collectionsCount;
-}
-
-/// A feed-style list of [PostCard]s with persistent interaction state.
+/// A feed-style list of [PostCard]s.
+///
+/// Interaction state is read from the SSOT post cache, so every card always
+/// reflects the latest data across pages.
 class PostFeed extends StatefulWidget {
   final List<Post> posts;
   final bool isMe;
@@ -50,15 +41,6 @@ class PostFeed extends StatefulWidget {
 }
 
 class _PostFeedState extends State<PostFeed> {
-  final Map<int, _PostInteractions> _interactions = {};
-
-  _PostInteractions _forPost(Post post) {
-    return _interactions.putIfAbsent(
-      post.id,
-      () => _PostInteractions.fromPost(post),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final listView = ListView.builder(
@@ -67,22 +49,10 @@ class _PostFeedState extends State<PostFeed> {
       itemCount: widget.posts.length,
       itemBuilder: (_, i) {
         final post = widget.posts[i];
-        final ix = _forPost(post);
         return PostCard(
           post: post,
           isMe: widget.isMe,
           onPostDeleted: widget.onPostDeleted,
-          initialLiked: ix.liked,
-          initialCollected: ix.collected,
-          initialLikesCount: ix.likesCount,
-          initialCollectionsCount: ix.collectionsCount,
-          onInteractionChanged:
-              (liked, collected, likesCount, collectionsCount) {
-                ix.liked = liked;
-                ix.collected = collected;
-                ix.likesCount = likesCount;
-                ix.collectionsCount = collectionsCount;
-              },
         );
       },
     );
@@ -95,7 +65,7 @@ class _PostFeedState extends State<PostFeed> {
 }
 
 /// A single post card — avatar, content, images, action buttons.
-class PostCard extends StatefulWidget {
+class PostCard extends ConsumerStatefulWidget {
   final Post post;
   final bool isMe;
   final VoidCallback? onPostDeleted;
@@ -105,17 +75,6 @@ class PostCard extends StatefulWidget {
   /// Whether tapping a non-interactive area of the card opens the post
   /// detail page. Disabled inside [PostDetailPage] to avoid re-entry.
   final bool openDetailOnTap;
-  final bool initialLiked;
-  final bool initialCollected;
-  final int initialLikesCount;
-  final int initialCollectionsCount;
-  final void Function(
-    bool liked,
-    bool collected,
-    int likesCount,
-    int collectionsCount,
-  )?
-  onInteractionChanged;
 
   const PostCard({
     super.key,
@@ -125,39 +84,25 @@ class PostCard extends StatefulWidget {
     this.trailing,
     this.onCommentTap,
     this.openDetailOnTap = true,
-    this.initialLiked = false,
-    this.initialCollected = false,
-    this.initialLikesCount = 0,
-    this.initialCollectionsCount = 0,
-    this.onInteractionChanged,
   });
 
   @override
-  State<PostCard> createState() => _PostCardState();
+  ConsumerState<PostCard> createState() => _PostCardState();
 }
 
-class _PostCardState extends State<PostCard> {
-  late bool _liked;
-  late bool _collected;
-  late int _likesCount;
-  late int _collectionsCount;
-
+class _PostCardState extends ConsumerState<PostCard> {
   @override
   void initState() {
     super.initState();
-    _liked = widget.initialLiked;
-    _collected = widget.initialCollected;
-    _likesCount = widget.initialLikesCount;
-    _collectionsCount = widget.initialCollectionsCount;
-  }
-
-  void _syncToParent() {
-    widget.onInteractionChanged?.call(
-      _liked,
-      _collected,
-      _likesCount,
-      _collectionsCount,
-    );
+    // Make sure the post exists in the SSOT cache without overwriting newer
+    // data (e.g. an interaction applied from the detail page). Deferred so the
+    // cache is not mutated while the widget tree is building.
+    final post = widget.post;
+    Future(() {
+      if (mounted) {
+        ref.read(postCacheProvider.notifier).ensure(post);
+      }
+    });
   }
 
   void _openDetail() {
@@ -167,62 +112,25 @@ class _PostCardState extends State<PostCard> {
   }
 
   Future<void> _toggleLike() async {
-    final repo = context.read<PostRepository>();
-    final result = _liked
-        ? await repo.unlikePost(widget.post.id)
-        : await repo.likePost(widget.post.id);
-    if (!mounted) return;
-    switch (result) {
-      case Ok<void>():
-        {
-          setState(() {
-            _liked = !_liked;
-            _likesCount += _liked ? 1 : -1;
-          });
-          _syncToParent();
-        }
-      case Error<void>():
-        {
-          if (mounted) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(const SnackBar(content: Text('操作失败')));
-          }
-        }
-    }
+    await ref
+        .read(postInteractionProvider.notifier)
+        .toggleLike(widget.post.id);
   }
 
   Future<void> _toggleCollect() async {
-    final repo = context.read<PostRepository>();
-    final result = _collected
-        ? await repo.uncollectPost(widget.post.id)
-        : await repo.collectPost(widget.post.id);
-    if (!mounted) return;
-    switch (result) {
-      case Ok<void>():
-        {
-          setState(() {
-            _collected = !_collected;
-            _collectionsCount += _collected ? 1 : -1;
-          });
-          _syncToParent();
-        }
-      case Error<void>():
-        {
-          if (mounted) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(const SnackBar(content: Text('操作失败')));
-          }
-        }
-    }
+    await ref
+        .read(postInteractionProvider.notifier)
+        .toggleCollect(widget.post.id);
   }
 
   @override
   Widget build(BuildContext context) {
     final isPinned =
         context.watch<CurrentUserProvider>().pinnedPostId == widget.post.id;
-    final post = widget.post;
+    // Read the latest entity from the SSOT cache so interactions applied on
+    // other pages (e.g. detail) are reflected here automatically.
+    final post =
+        ref.watch(postCacheProvider).getById(widget.post.id) ?? widget.post;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
@@ -293,9 +201,13 @@ class _PostCardState extends State<PostCard> {
                 child: Row(
                   children: [
                     StatButton(
-                      icon: _liked ? Icons.favorite : Icons.favorite_border,
-                      label: '$_likesCount',
-                      color: _liked ? Colors.red : const Color(0xFF1D1B20),
+                      icon: (post.liked ?? false)
+                          ? Icons.favorite
+                          : Icons.favorite_border,
+                      label: '${post.likesCount}',
+                      color: (post.liked ?? false)
+                          ? Colors.red
+                          : const Color(0xFF1D1B20),
                       onTap: _toggleLike,
                     ),
                     const SizedBox(width: 20),
@@ -306,9 +218,11 @@ class _PostCardState extends State<PostCard> {
                     ),
                     const SizedBox(width: 20),
                     StatButton(
-                      icon: _collected ? Icons.bookmark : Icons.bookmark_border,
-                      label: '$_collectionsCount',
-                      color: _collected
+                      icon: (post.collected ?? false)
+                          ? Icons.bookmark
+                          : Icons.bookmark_border,
+                      label: '${post.collectionsCount}',
+                      color: (post.collected ?? false)
                           ? Colors.amber
                           : const Color(0xFF1D1B20),
                       onTap: _toggleCollect,
@@ -432,25 +346,11 @@ class _PostCardState extends State<PostCard> {
 
     if (confirmed != true) return;
 
-    final result = await context.read<PostRepository>().deletePost(
-      widget.post.id,
-    );
-    if (!context.mounted) return;
-
-    switch (result) {
-      case Ok<void>():
-        {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('已删除')));
-          widget.onPostDeleted?.call();
-        }
-      case Error<void>():
-        {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('删除失败')));
-        }
+    final deleted = await ref
+        .read(postInteractionProvider.notifier)
+        .delete(widget.post.id);
+    if (deleted) {
+      widget.onPostDeleted?.call();
     }
   }
 }

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:provider/provider.dart';
 
 import 'config/dependencies.dart';
+import 'providers/snackbar_provider.dart';
 import 'ui/auth/splash_page.dart';
 
 /// Default entry: runs in local mode (no backend needed).
@@ -12,9 +14,11 @@ import 'ui/auth/splash_page.dart';
 /// ```
 void main() {
   runApp(
-    MultiProvider(
-      providers: providersLocal,
-      child: const MainApp(),
+    ProviderScope(
+      child: MultiProvider(
+        providers: providersLocal,
+        child: const MainApp(),
+      ),
     ),
   );
 }
@@ -29,6 +33,9 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(home: SplashPage());
+    return MaterialApp(
+      scaffoldMessengerKey: rootScaffoldMessengerKey,
+      home: SplashPage(),
+    );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:provider/provider.dart';
 
 import 'config/dependencies.dart';
@@ -14,9 +15,11 @@ import 'main.dart';
 /// ```
 void main() {
   runApp(
-    MultiProvider(
-      providers: providersLocal,
-      child: const MainApp(),
+    ProviderScope(
+      child: MultiProvider(
+        providers: providersLocal,
+        child: const MainApp(),
+      ),
     ),
   );
 }

@@ -92,19 +92,26 @@ class Post {
         'createdAt': createdAt.toIso8601String(),
       };
 
-  Post copyWith({bool? isPinned}) {
+  Post copyWith({
+    int? likesCount,
+    int? commentsCount,
+    int? collectionsCount,
+    bool? isPinned,
+    bool? liked,
+    bool? collected,
+  }) {
     return Post(
       id: id,
       author: author,
       content: content,
       images: images,
       location: location,
-      likesCount: likesCount,
-      commentsCount: commentsCount,
-      collectionsCount: collectionsCount,
+      likesCount: likesCount ?? this.likesCount,
+      commentsCount: commentsCount ?? this.commentsCount,
+      collectionsCount: collectionsCount ?? this.collectionsCount,
       isPinned: isPinned ?? this.isPinned,
-      liked: liked,
-      collected: collected,
+      liked: liked ?? this.liked,
+      collected: collected ?? this.collected,
       topics: topics,
       createdAt: createdAt,
     );

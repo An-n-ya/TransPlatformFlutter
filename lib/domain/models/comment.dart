@@ -100,4 +100,25 @@ class Comment {
         'topReply': topReply?.toJson(),
         'createdAt': createdAt.toIso8601String(),
       };
+
+  Comment copyWith({
+    int? likesCount,
+    int? commentsCount,
+    bool? liked,
+    TopReply? topReply,
+  }) {
+    return Comment(
+      id: id,
+      postId: postId,
+      author: author,
+      parentId: parentId,
+      replyToUser: replyToUser,
+      content: content,
+      likesCount: likesCount ?? this.likesCount,
+      commentsCount: commentsCount ?? this.commentsCount,
+      liked: liked ?? this.liked,
+      topReply: topReply ?? this.topReply,
+      createdAt: createdAt,
+    );
+  }
 }

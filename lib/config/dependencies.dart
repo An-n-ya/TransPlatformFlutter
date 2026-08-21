@@ -25,15 +25,17 @@ import '../data/services/current_user_provider.dart';
 import '../data/services/global_config_provider.dart';
 import 'env.dart';
 
+/// Single shared [ApiClient] used by both the provider tree and the Riverpod
+/// providers, so auth tokens set on login are visible to every HTTP call.
+final ApiClient sharedApiClient = ApiClient(baseUrl: Env.apiBaseUrl);
+
 final List<SingleChildWidget> _sharedProviders = [
   Provider<TokenStorageService>(create: (_) => TokenStorageService()),
   ChangeNotifierProvider<CurrentUserProvider>(
       create: (_) => CurrentUserProvider()),
   ChangeNotifierProvider<GlobalConfigProvider>(
       create: (_) => GlobalConfigProvider(initialBaseUrl: Env.apiBaseUrl)),
-  Provider<ApiClient>(
-    create: (_) => ApiClient(baseUrl: Env.apiBaseUrl),
-  ),
+  Provider<ApiClient>(create: (_) => sharedApiClient),
 ];
 
 List<SingleChildWidget> get providersLocal => [

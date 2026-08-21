@@ -2,10 +2,13 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:provider/provider.dart';
+import 'package:trans_platform/data/cache/comment_cache.dart';
 import 'package:trans_platform/data/repositories/post/post_repository.dart';
 import 'package:trans_platform/domain/models/comment.dart';
 import 'package:trans_platform/domain/models/user.dart';
+import 'package:trans_platform/providers/comment_mutation_providers.dart';
 import 'package:trans_platform/ui/posts/interaction.dart';
 import 'package:trans_platform/ui/posts/post_card.dart';
 import 'package:trans_platform/ui/posts/comment_input.dart';
@@ -281,54 +284,43 @@ class _ReplyDetailSheetState extends State<ReplyDetailSheet> {
   }
 }
 
-class _ReplyDetailItem extends StatefulWidget {
+class _ReplyDetailItem extends ConsumerStatefulWidget {
   final Comment comment;
   final VoidCallback? onReply;
 
   const _ReplyDetailItem({required this.comment, this.onReply});
 
   @override
-  State<_ReplyDetailItem> createState() => _ReplyDetailItemState();
+  ConsumerState<_ReplyDetailItem> createState() => _ReplyDetailItemState();
 }
 
-class _ReplyDetailItemState extends State<_ReplyDetailItem> {
-  late bool _liked;
-  late int _likesCount;
-
+class _ReplyDetailItemState extends ConsumerState<_ReplyDetailItem> {
   @override
   void initState() {
     super.initState();
-    _liked = widget.comment.liked ?? false;
-    _likesCount = widget.comment.likesCount;
+    // Ensure the comment exists in the SSOT cache without overwriting newer
+    // data. Deferred so the cache is not mutated while the tree builds.
+    final comment = widget.comment;
+    Future(() {
+      if (mounted) {
+        ref.read(commentCacheProvider.notifier).ensure(comment);
+      }
+    });
   }
 
   Future<void> _toggleLike() async {
-    final repo = context.read<PostRepository>();
-    final result = _liked
-        ? await repo.unlikeComment(widget.comment.id)
-        : await repo.likeComment(widget.comment.id);
-    if (!mounted) return;
-    switch (result) {
-      case Ok<void>():{
-        setState(() {
-          _liked = !_liked;
-          _likesCount += _liked ? 1 : -1;
-        });
-      }
-      case Error<void>():{
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('操作失败')),
-          );
-        }
-      }
-    }
+    await ref
+        .read(commentMutationProvider.notifier)
+        .toggleLike(widget.comment.id);
   }
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final comment = widget.comment;
+    final comment =
+        ref.watch(commentCacheProvider).getById(widget.comment.id) ??
+        widget.comment;
+    final liked = comment.liked ?? false;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -363,9 +355,9 @@ class _ReplyDetailItemState extends State<_ReplyDetailItem> {
                 Row(
                   children: [
                     PostActionBtn(
-                      icon: _liked ? Icons.favorite : Icons.favorite_border,
-                      label: '$_likesCount',
-                      color: _liked ? Colors.red : null,
+                      icon: liked ? Icons.favorite : Icons.favorite_border,
+                      label: '${comment.likesCount}',
+                      color: liked ? Colors.red : null,
                       onPressed: _toggleLike,
                     ),
                     const SizedBox(width: 12),

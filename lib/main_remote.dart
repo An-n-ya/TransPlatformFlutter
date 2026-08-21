@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:provider/provider.dart';
 
 import 'config/dependencies.dart';
 import 'main.dart';
+import 'providers/repository_providers.dart';
 
 /// Remote data mode entry point.
 ///
@@ -17,9 +19,14 @@ import 'main.dart';
 /// ```
 void main() {
   runApp(
-    MultiProvider(
-      providers: providersRemote,
-      child: const MainApp(),
+    ProviderScope(
+      overrides: [
+        repositoryModeProvider.overrideWithValue(RepositoryMode.remote),
+      ],
+      child: MultiProvider(
+        providers: providersRemote,
+        child: const MainApp(),
+      ),
     ),
   );
 }

@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:provider/provider.dart';
-import 'package:trans_platform/ui/posts/comment.dart';
-import 'package:trans_platform/ui/posts/comment_input.dart';
 
-import '../../data/repositories/post/post_repository.dart';
+import '../../data/cache/comment_cache.dart';
+import '../../data/cache/post_cache.dart';
 import '../../data/services/current_user_provider.dart';
-import '../../domain/models/comment.dart';
 import '../../domain/models/post.dart';
-import '../../utils/result.dart';
+import '../../domain/models/user.dart';
+import '../../providers/comment_mutation_providers.dart';
+import '../../providers/post_providers.dart';
 import '../user/user_buttons.dart';
+import 'comment.dart';
+import 'comment_input.dart';
 import 'post_card.dart';
 
 /// Post detail page (PostDetail-Mobile design).
@@ -16,68 +19,46 @@ import 'post_card.dart';
 /// Shows the post inside a white rounded card (author header, content,
 /// topic chips, image grid, stats row), then the comment list below a
 /// section divider, with a sticky comment input at the bottom.
-class PostDetailPage extends StatefulWidget {
+///
+/// Data is served from the SSOT caches: the post from [PostCache] and the
+/// comments from [CommentCache]; the loader providers drive the initial
+/// loading/error state and keep the caches fresh.
+class PostDetailPage extends ConsumerStatefulWidget {
   final int? postId;
   final Post? post;
 
   const PostDetailPage({super.key, this.postId, this.post});
 
   @override
-  State<PostDetailPage> createState() => _PostDetailPageState();
+  ConsumerState<PostDetailPage> createState() => _PostDetailPageState();
 }
 
-class _PostDetailPageState extends State<PostDetailPage> {
+class _PostDetailPageState extends ConsumerState<PostDetailPage> {
   final _commentController = TextEditingController();
   final _focusNode = FocusNode();
-  late Future<Result<List<Comment>>> _commentsFuture;
   int? _currentUserId;
   bool _isFocused = false;
   bool _isSending = false;
 
-  // Post state (loaded from network when only postId is given)
-  Post? _post;
-  bool _isLoadingPost = false;
-  String? _loadError;
+  int? get _postId => widget.postId ?? widget.post?.id;
 
   @override
   void initState() {
     super.initState();
-    _post = widget.post;
-    _initComments();
+    // Make a passed-in post available in the SSOT cache without overwriting
+    // newer data. Deferred so the cache is not mutated while the tree builds.
+    final post = widget.post;
+    if (post != null) {
+      Future(() {
+        if (mounted) {
+          ref.read(postCacheProvider.notifier).ensure(post);
+        }
+      });
+    }
     _loadCurrentUser();
     _focusNode.addListener(
       () => setState(() => _isFocused = _focusNode.hasFocus),
     );
-    if (_post == null && widget.postId != null) {
-      _fetchPost();
-    }
-  }
-
-  void _initComments() {
-    if (_post != null) {
-      _commentsFuture = _loadComments();
-    }
-  }
-
-  Future<void> _fetchPost() async {
-    setState(() => _isLoadingPost = true);
-    final result =
-        await context.read<PostRepository>().getPost(widget.postId!);
-    if (!mounted) return;
-    switch (result) {
-      case Ok<Post>(:final value):
-        setState(() {
-          _post = value;
-          _isLoadingPost = false;
-        });
-        _initComments();
-        if (mounted) setState(() {});
-      case Error<Post>():
-        setState(() {
-          _isLoadingPost = false;
-          _loadError = result.error.toString();
-        });
-    }
   }
 
   @override
@@ -91,42 +72,28 @@ class _PostDetailPageState extends State<PostDetailPage> {
     _currentUserId = context.read<CurrentUserProvider>().userId;
   }
 
-  Future<Result<List<Comment>>> _loadComments() =>
-      context.read<PostRepository>().getPostComments(_post!.id);
-
   Future<void> _sendComment() async {
+    final postId = _postId;
+    if (postId == null) return;
     final content = _commentController.text.trim();
     if (content.isEmpty) return;
 
     setState(() => _isSending = true);
 
-    final result = await context.read<PostRepository>().createComment(
-      _post!.id,
+    // Minimal placeholder for the optimistic insert; replaced by the
+    // server-returned comment on success.
+    final author = User(id: _currentUserId ?? 0, username: '', nickname: '我');
+    final ok = await ref.read(commentMutationProvider.notifier).create(
+      postId: postId,
       content: content,
+      author: author,
     );
 
     if (!mounted) return;
-
-    switch (result) {
-      case Ok<Comment>():
-        _commentController.clear();
-        setState(() {
-          _isSending = false;
-          _commentsFuture = _loadComments();
-        });
-      case Error<Comment>():
-        setState(() => _isSending = false);
-        if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('评论发送失败')));
-        }
+    setState(() => _isSending = false);
+    if (ok) {
+      _commentController.clear();
     }
-  }
-
-  void _reloadComments() {
-    _commentsFuture = _loadComments();
-    setState(() {});
   }
 
   Future<void> _deleteComment(int commentId) async {
@@ -150,22 +117,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
 
     if (confirmed != true || !mounted) return;
 
-    final result = await context.read<PostRepository>().deleteComment(
-      commentId,
-    );
-    if (!mounted) return;
-
-    switch (result) {
-      case Ok<void>():
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('评论已删除')));
-        _reloadComments();
-      case Error<void>():
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('删除失败')));
-    }
+    await ref.read(commentMutationProvider.notifier).delete(commentId);
   }
 
   // ── Build ──
@@ -173,7 +125,6 @@ class _PostDetailPageState extends State<PostDetailPage> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final post = _post;
     return Scaffold(
       backgroundColor: cs.surface,
       appBar: AppBar(
@@ -191,24 +142,29 @@ class _PostDetailPageState extends State<PostDetailPage> {
             color: cs.onSurface,
           ),
         ),
-        // actions: [
-        //   IconButton(
-        //     icon: const Icon(Icons.more_vert, size: 22),
-        //     onPressed: () {},
-        //   ),
-        // ],
       ),
-      body: _buildBody(post),
+      body: _buildBody(),
     );
   }
 
-  Widget _buildBody(Post? post) {
-    // Post not yet available
-    if (post == null) {
-      if (_isLoadingPost) {
+  Widget _buildBody() {
+    final postId = _postId;
+    final cached = postId != null
+        ? ref.watch(postCacheProvider).getById(postId)
+        : null;
+
+    // Post available (from cache or passed in) → render content.
+    if (cached != null) {
+      return _buildPostContent(cached, postId!);
+    }
+
+    // Post not yet available.
+    if (postId != null) {
+      final asyncDetail = ref.watch(postDetailProvider(postId));
+      if (asyncDetail.isLoading) {
         return const Center(child: CircularProgressIndicator());
       }
-      if (_loadError != null) {
+      if (asyncDetail.hasError) {
         return Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -218,27 +174,26 @@ class _PostDetailPageState extends State<PostDetailPage> {
               Text('加载失败',
                   style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 8),
-              Text(_loadError!,
+              Text(_formatError(asyncDetail.error!),
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodySmall),
               const SizedBox(height: 16),
               FilledButton.tonal(
-                onPressed: () {
-                  setState(() {
-                    _loadError = null;
-                    _fetchPost();
-                  });
-                },
+                onPressed: () => ref.invalidate(postDetailProvider(postId)),
                 child: const Text('重试'),
               ),
             ],
           ),
         );
       }
-      // Both post and postId are null -> blank page
-      return const SizedBox.shrink();
+      return const Center(child: CircularProgressIndicator());
     }
 
+    // Both post and postId are null -> blank page.
+    return const SizedBox.shrink();
+  }
+
+  Widget _buildPostContent(Post post, int postId) {
     return Column(
       children: [
         Expanded(
@@ -255,10 +210,6 @@ class _PostDetailPageState extends State<PostDetailPage> {
                       post: post,
                       isMe: _currentUserId == post.author.id,
                       openDetailOnTap: false,
-                      initialLiked: post.liked ?? false,
-                      initialCollected: post.collected ?? false,
-                      initialLikesCount: post.likesCount,
-                      initialCollectionsCount: post.collectionsCount,
                       trailing: _currentUserId == post.author.id
                           ? null
                           : UserFollowButton(targetUser: post.author),
@@ -273,7 +224,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
                     padding: EdgeInsets.fromLTRB(20, 12, 20, 0),
                     child: Divider(height: 1, color: Color(0xFFCAC4D0)),
                   ),
-                  _buildCommentsSection(),
+                  _buildCommentsSection(postId),
                 ],
               ),
             ),
@@ -292,49 +243,40 @@ class _PostDetailPageState extends State<PostDetailPage> {
 
   // ── Comments ──
 
-  Widget _buildCommentsSection() {
-    return FutureBuilder<Result<List<Comment>>>(
-      future: _commentsFuture,
-      builder: (_, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Padding(
-            padding: EdgeInsets.only(top: 24),
-            child: Center(child: CircularProgressIndicator()),
-          );
-        }
-        if (snapshot.hasError) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Text('加载评论失败: ${snapshot.error}'),
-          );
-        }
-        if (!snapshot.hasData) {
-          return const Padding(
-            padding: EdgeInsets.only(top: 24),
-            child: Center(child: CircularProgressIndicator()),
-          );
-        }
-        return switch (snapshot.data!) {
-          Ok<List<Comment>>(:final value) => value.isEmpty
-              ? const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 24),
-                  child: Text('暂无评论'),
-                )
-              : Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: CommentList(
-                    comments: value,
-                    currentUserId: _currentUserId,
-                    onDeleteRequested: (id) => _deleteComment(id),
-                  ),
+  Widget _buildCommentsSection(int postId) {
+    final asyncComments = ref.watch(postCommentsProvider(postId));
+    return asyncComments.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.only(top: 24),
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (error, _) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: Text('加载评论失败: $error'),
+      ),
+      data: (_) {
+        final comments =
+            ref.watch(commentCacheProvider).getByPost(postId);
+        return comments.isEmpty
+            ? const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 24),
+                child: Text('暂无评论'),
+              )
+            : Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: CommentList(
+                  comments: comments,
+                  currentUserId: _currentUserId,
+                  onDeleteRequested: (id) => _deleteComment(id),
                 ),
-          Error<List<Comment>>(:final error) => Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Text('加载评论失败: $error'),
-            ),
-        };
+              );
       },
     );
   }
-}
 
+  String _formatError(Object e) {
+    final s = e.toString();
+    final idx = s.indexOf('): ');
+    return idx != -1 ? s.substring(idx + 3) : s;
+  }
+}

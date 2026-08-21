@@ -1,69 +1,44 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../data/repositories/post/post_repository.dart';
-import '../../domain/models/post.dart';
-import '../../utils/result.dart';
+import '../../data/cache/post_cache.dart';
+import '../../providers/post_providers.dart';
 import 'post_card.dart';
 
-/// Feed page — loads posts from [PostRepository] and renders them as cards.
+/// Feed page — loads the feed via [feedLoaderProvider] and renders posts
+/// from the SSOT post cache.
 ///
 /// States:
 /// - Loading → [CircularProgressIndicator]
 /// - Empty  → "暂无内容"
 /// - Error  → message + retry button
 /// - Data   → [PostFeed]
-class Posts extends StatefulWidget {
+class Posts extends ConsumerWidget {
   const Posts({super.key});
 
   @override
-  State<Posts> createState() => _PostsState();
-}
-
-class _PostsState extends State<Posts> {
-  late Future<Result<List<Post>>> _feedFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadFeed();
-  }
-
-  void _loadFeed() {
-    _feedFuture = context.read<PostRepository>().getFeed();
-  }
-
-  Future<void> _refreshFeed() async {
-    final future = context.read<PostRepository>().getFeed();
-    setState(() {
-      _feedFuture = future;
-    });
-    await future;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<Result<List<Post>>>(
-      future: _feedFuture,
-      builder: (_, snapshot) {
-        if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        return switch (snapshot.data!) {
-          Ok<List<Post>>(:final value) => value.isEmpty
-              ? const Center(child: Text('暂无内容'))
-              : PostFeed(posts: value, onRefresh: _refreshFeed),
-          Error<List<Post>>(:final error) => _ErrorView(
-              message: _formatError(error),
-              onRetry: () => setState(_loadFeed),
-            ),
-        };
+  Widget build(BuildContext context, WidgetRef ref) {
+    final feedAsync = ref.watch(feedLoaderProvider);
+    return feedAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, _) => _ErrorView(
+        message: _formatError(error),
+        onRetry: () => ref.invalidate(feedLoaderProvider),
+      ),
+      data: (_) {
+        final posts = ref.watch(postCacheProvider).getList('feed');
+        return posts.isEmpty
+            ? const Center(child: Text('暂无内容'))
+            : PostFeed(
+                posts: posts,
+                onRefresh: () =>
+                    ref.read(feedLoaderProvider.notifier).refresh(),
+              );
       },
     );
   }
 
-  String _formatError(Exception e) {
+  String _formatError(Object e) {
     final s = e.toString();
     final idx = s.indexOf('): ');
     return idx != -1 ? s.substring(idx + 3) : s;

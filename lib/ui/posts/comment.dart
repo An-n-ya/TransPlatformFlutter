@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../data/repositories/post/post_repository.dart';
+import '../../data/cache/comment_cache.dart';
 import '../../domain/models/comment.dart' hide TopReply;
-import '../../utils/result.dart';
+import '../../providers/comment_mutation_providers.dart';
 import 'interaction.dart';
 import 'post_card.dart';
 import 'reply.dart';
@@ -39,7 +39,7 @@ class CommentList extends StatelessWidget {
   }
 }
 
-class _CommentTile extends StatefulWidget {
+class _CommentTile extends ConsumerStatefulWidget {
   final Comment comment;
   final bool isMe;
   final VoidCallback? onDelete;
@@ -47,53 +47,41 @@ class _CommentTile extends StatefulWidget {
   const _CommentTile({required this.comment, this.isMe = false, this.onDelete});
 
   @override
-  State<_CommentTile> createState() => _CommentTileState();
+  ConsumerState<_CommentTile> createState() => _CommentTileState();
 }
 
-class _CommentTileState extends State<_CommentTile> {
-  late bool _liked;
-  late int _likesCount;
-
+class _CommentTileState extends ConsumerState<_CommentTile> {
   @override
   void initState() {
     super.initState();
-    _liked = widget.comment.liked ?? false;
-    _likesCount = widget.comment.likesCount;
+    // Ensure the comment exists in the SSOT cache without overwriting newer
+    // data. Deferred so the cache is not mutated while the tree builds.
+    final comment = widget.comment;
+    Future(() {
+      if (mounted) {
+        ref.read(commentCacheProvider.notifier).ensure(comment);
+      }
+    });
   }
 
   Future<void> _toggleLike() async {
-    final repo = context.read<PostRepository>();
-    final result = _liked
-        ? await repo.unlikeComment(widget.comment.id)
-        : await repo.likeComment(widget.comment.id);
-    if (!mounted) return;
-    switch (result) {
-      case Ok<void>():
-        {
-          setState(() {
-            _liked = !_liked;
-            _likesCount += _liked ? 1 : -1;
-          });
-        }
-      case Error<void>():
-        {
-          if (mounted) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(const SnackBar(content: Text('操作失败')));
-          }
-        }
-    }
+    await ref
+        .read(commentMutationProvider.notifier)
+        .toggleLike(widget.comment.id);
   }
 
   @override
   Widget build(BuildContext context) {
+    final comment =
+        ref.watch(commentCacheProvider).getById(widget.comment.id) ??
+        widget.comment;
+    final liked = comment.liked ?? false;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         PostHeader(
-          user: widget.comment.author,
-          createdAt: widget.comment.createdAt,
+          user: comment.author,
+          createdAt: comment.createdAt,
           trailing: widget.isMe
               ? PopupMenuButton<String>(
                   icon: const Icon(Icons.more_vert, size: 20),
@@ -124,7 +112,7 @@ class _CommentTileState extends State<_CommentTile> {
         const SizedBox(height: 4),
         Padding(
           padding: const EdgeInsets.only(left: 72),
-          child: Text(widget.comment.content),
+          child: Text(comment.content),
         ),
         const SizedBox(height: 8),
         Padding(
@@ -132,9 +120,9 @@ class _CommentTileState extends State<_CommentTile> {
           child: Row(
             children: [
               PostActionBtn(
-                icon: _liked ? Icons.favorite : Icons.favorite_border,
-                label: '$_likesCount',
-                color: _liked ? Colors.red : null,
+                icon: liked ? Icons.favorite : Icons.favorite_border,
+                label: '${comment.likesCount}',
+                color: liked ? Colors.red : null,
                 onPressed: _toggleLike,
               ),
               const SizedBox(width: 12),
@@ -149,7 +137,7 @@ class _CommentTileState extends State<_CommentTile> {
                   ),
                   builder: (_) => SizedBox(
                     height: MediaQuery.of(context).size.height * 0.9,
-                    child: ReplyDetailSheet(comment: widget.comment),
+                    child: ReplyDetailSheet(comment: comment),
                   ),
                 ),
                 child: Text(
@@ -160,10 +148,10 @@ class _CommentTileState extends State<_CommentTile> {
             ],
           ),
         ),
-        if (widget.comment.topReply != null)
+        if (comment.topReply != null)
           Padding(
             padding: const EdgeInsets.only(left: 72, top: 8, right: 16),
-            child: TopReply(comment: widget.comment),
+            child: TopReply(comment: comment),
           ),
       ],
     );
