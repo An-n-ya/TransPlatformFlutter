@@ -54,6 +54,38 @@ mixin FollowStateMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   }
 }
 
+/// Shared shell for "more" icon buttons with a conditional dropdown.
+///
+/// [UserIconMoreButton] and [PostMoreButton] both render a "more" icon
+/// [PopupMenuButton] whose entries depend on state, hide themselves when the
+/// menu would be empty, and dispatch selections through a single callback.
+/// This mixin centralizes the "build entries → hide if empty → dispatch"
+/// pattern so the two widgets can never drift apart.
+mixin MoreMenuButtonMixin<T extends StatefulWidget> on State<T> {
+  /// Menu entries shown when the button is tapped, ordered top-to-bottom.
+  /// Return an empty list to hide the button entirely.
+  List<PopupMenuEntry<String>> buildMoreMenuItems(BuildContext context);
+
+  /// Called with the [PopupMenuItem.value] of the selected entry.
+  void onMoreMenuSelected(String value);
+
+  /// The "more" icon button, or [SizedBox.shrink] when there are no entries.
+  Widget buildMoreMenuButton(
+    BuildContext context, {
+    IconData icon = Icons.more_horiz,
+  }) {
+    final items = buildMoreMenuItems(context);
+    if (items.isEmpty) return const SizedBox.shrink();
+    return PopupMenuButton<String>(
+      icon: Icon(icon, size: 20),
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(),
+      onSelected: onMoreMenuSelected,
+      itemBuilder: (_) => items,
+    );
+  }
+}
+
 /// Follow / Unfollow button.
 ///
 /// Follow state is read from the SSOT [FollowRelations]; toggling goes through
@@ -167,7 +199,8 @@ class UserIconMoreButton extends ConsumerStatefulWidget {
 }
 
 class _UserIconMoreButtonState extends ConsumerState<UserIconMoreButton>
-    with FollowStateMixin<UserIconMoreButton> {
+    with FollowStateMixin<UserIconMoreButton>,
+        MoreMenuButtonMixin<UserIconMoreButton> {
   @override
   void initState() {
     super.initState();
@@ -176,14 +209,12 @@ class _UserIconMoreButtonState extends ConsumerState<UserIconMoreButton>
   }
 
   @override
-  Widget build(BuildContext context) {
+  List<PopupMenuEntry<String>> buildMoreMenuItems(BuildContext context) {
     // Own profile → edit-profile item; otherwise an unfollow item while
-    // following. With no applicable item, hide rather than open an empty
-    // dropdown.
-    final items = <PopupMenuEntry<String>>[];
+    // following. With no applicable item the mixin hides the button.
     if (isMe) {
-      items.add(
-        const PopupMenuItem(
+      return const [
+        PopupMenuItem(
           value: 'editProfile',
           child: Row(
             children: [
@@ -193,10 +224,11 @@ class _UserIconMoreButtonState extends ConsumerState<UserIconMoreButton>
             ],
           ),
         ),
-      );
-    } else if (isFollowing) {
-      items.add(
-        const PopupMenuItem(
+      ];
+    }
+    if (isFollowing) {
+      return const [
+        PopupMenuItem(
           value: 'unfollow',
           child: Row(
             children: [
@@ -206,28 +238,28 @@ class _UserIconMoreButtonState extends ConsumerState<UserIconMoreButton>
             ],
           ),
         ),
-      );
+      ];
     }
-    if (items.isEmpty) return const SizedBox.shrink();
+    return const [];
+  }
 
-    return PopupMenuButton<String>(
-      icon: const Icon(Icons.more_horiz, size: 20),
-      padding: EdgeInsets.zero,
-      constraints: const BoxConstraints(),
-      onSelected: (value) {
-        switch (value) {
-          case 'editProfile':
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => ProfilePage(existingUser: widget.targetUser),
-              ),
-            );
-          case 'unfollow':
-            toggleFollow();
-        }
-      },
-      itemBuilder: (_) => items,
-    );
+  @override
+  void onMoreMenuSelected(String value) {
+    switch (value) {
+      case 'editProfile':
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => ProfilePage(existingUser: widget.targetUser),
+          ),
+        );
+      case 'unfollow':
+        toggleFollow();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return buildMoreMenuButton(context);
   }
 }
 

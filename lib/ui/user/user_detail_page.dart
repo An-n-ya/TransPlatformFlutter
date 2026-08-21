@@ -98,10 +98,9 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage> {
                   UserPostsTab(
                     userId: user.id,
                     pinnedPostId: user.pinnedPostId,
-                    isMe: widget.isMe,
                   ),
-                  UserLikedPostsTab(isMe: widget.isMe),
-                  UserCollectedPostsTab(isMe: widget.isMe),
+                  const UserLikedPostsTab(),
+                  const UserCollectedPostsTab(),
                 ],
               ),
             );

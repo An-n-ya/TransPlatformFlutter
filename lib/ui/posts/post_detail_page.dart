@@ -208,7 +208,6 @@ class _PostDetailPageState extends ConsumerState<PostDetailPage> {
                     padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
                     child: PostCard(
                       post: post,
-                      isMe: _currentUserId == post.author.id,
                       openDetailOnTap: false,
                       trailing: _currentUserId == post.author.id
                           ? null

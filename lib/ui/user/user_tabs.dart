@@ -10,9 +10,8 @@ import '../posts/post_card.dart';
 class UserPostsTab extends StatefulWidget {
   final int userId;
   final int? pinnedPostId;
-  final bool isMe;
 
-  const UserPostsTab({super.key, required this.userId, this.pinnedPostId, this.isMe = false});
+  const UserPostsTab({super.key, required this.userId, this.pinnedPostId});
 
   @override
   State<UserPostsTab> createState() => _UserPostsTabState();
@@ -91,7 +90,6 @@ class _UserPostsTabState extends State<UserPostsTab> {
                   padding: EdgeInsets.only(top: kToolbarHeight + kTextTabBarHeight),
                   child: PostFeed(
                     posts: value,
-                    isMe: widget.isMe,
                     onPostDeleted: () => setState(_loadPosts),
                     onRefresh: _refreshPosts,
                   ),
@@ -136,8 +134,7 @@ class _UserPostsTabState extends State<UserPostsTab> {
 
 /// Tab content: list of posts liked by current user.
 class UserLikedPostsTab extends StatefulWidget {
-  final bool isMe;
-  const UserLikedPostsTab({super.key, this.isMe = false});
+  const UserLikedPostsTab({super.key});
   @override
   State<UserLikedPostsTab> createState() => _UserLikedPostsTabState();
 }
@@ -167,7 +164,6 @@ class _UserLikedPostsTabState extends State<UserLikedPostsTab> {
   Widget build(BuildContext context) {
     return _PostListBody(
       future: _postsFuture,
-      isMe: widget.isMe,
       onRefresh: _refreshPosts,
     );
   }
@@ -175,8 +171,7 @@ class _UserLikedPostsTabState extends State<UserLikedPostsTab> {
 
 /// Tab content: list of posts collected by current user.
 class UserCollectedPostsTab extends StatefulWidget {
-  final bool isMe;
-  const UserCollectedPostsTab({super.key, this.isMe = false});
+  const UserCollectedPostsTab({super.key});
   @override
   State<UserCollectedPostsTab> createState() => _UserCollectedPostsTabState();
 }
@@ -206,7 +201,6 @@ class _UserCollectedPostsTabState extends State<UserCollectedPostsTab> {
   Widget build(BuildContext context) {
     return _PostListBody(
       future: _postsFuture,
-      isMe: widget.isMe,
       onRefresh: _refreshPosts,
     );
   }
@@ -215,12 +209,10 @@ class _UserCollectedPostsTabState extends State<UserCollectedPostsTab> {
 /// Shared body for liked / collected post tabs.
 class _PostListBody extends StatelessWidget {
   final Future<Result<List<Post>>> future;
-  final bool isMe;
   final Future<void> Function() onRefresh;
 
   const _PostListBody({
     required this.future,
-    required this.isMe,
     required this.onRefresh,
   });
 
@@ -239,7 +231,7 @@ class _PostListBody extends StatelessWidget {
                   // Cover the full pinned header height (collapsed toolbar + TabBar)
                   padding: EdgeInsets.only(top: kToolbarHeight + kTextTabBarHeight),
                   child: PostFeed(
-                      posts: value, isMe: isMe, onRefresh: onRefresh),
+                      posts: value, onRefresh: onRefresh),
                 ),
           Error<List<Post>>(:final error) => Center(
               child: Column(

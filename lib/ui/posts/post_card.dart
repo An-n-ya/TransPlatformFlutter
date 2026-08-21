@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:provider/provider.dart';
+import 'package:trans_platform/ui/posts/interaction.dart';
 
 import '../../data/cache/post_cache.dart';
 import '../../data/repositories/user/user_repository.dart';
@@ -24,14 +25,12 @@ import 'post_detail_page.dart';
 /// reflects the latest data across pages.
 class PostFeed extends StatefulWidget {
   final List<Post> posts;
-  final bool isMe;
   final VoidCallback? onPostDeleted;
   final Future<void> Function()? onRefresh;
 
   const PostFeed({
     super.key,
     required this.posts,
-    this.isMe = false,
     this.onPostDeleted,
     this.onRefresh,
   });
@@ -51,7 +50,6 @@ class _PostFeedState extends State<PostFeed> {
         final post = widget.posts[i];
         return PostCard(
           post: post,
-          isMe: widget.isMe,
           onPostDeleted: widget.onPostDeleted,
         );
       },
@@ -67,7 +65,6 @@ class _PostFeedState extends State<PostFeed> {
 /// A single post card — avatar, content, images, action buttons.
 class PostCard extends ConsumerStatefulWidget {
   final Post post;
-  final bool isMe;
   final VoidCallback? onPostDeleted;
   final Widget? trailing;
   final VoidCallback? onCommentTap;
@@ -79,7 +76,6 @@ class PostCard extends ConsumerStatefulWidget {
   const PostCard({
     super.key,
     required this.post,
-    this.isMe = false,
     this.onPostDeleted,
     this.trailing,
     this.onCommentTap,
@@ -284,7 +280,7 @@ class _PostCardState extends ConsumerState<PostCard> {
           ),
           widget.trailing ??
               PostCardTrailing(
-                isMe: widget.isMe,
+                author: post.author,
                 isPinned: isPinned,
                 onDelete: _deletePost,
                 onTogglePin: _togglePin,
@@ -462,22 +458,27 @@ class PostHeader extends StatelessWidget {
 }
 
 /// Trailing widget for a post header: pinned flag + more menu.
-class PostCardTrailing extends StatelessWidget {
-  final bool isMe;
+///
+/// "Is this the current user's own post" is derived from [author] compared
+/// against the signed-in user rather than plumbed through an `isMe` flag, so
+/// the menu can never drift from the actual author.
+class PostCardTrailing extends ConsumerWidget {
+  final User author;
   final bool isPinned;
   final VoidCallback onDelete;
   final VoidCallback onTogglePin;
 
   const PostCardTrailing({
     super.key,
-    required this.isMe,
+    required this.author,
     required this.isPinned,
     required this.onDelete,
     required this.onTogglePin,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isMe = context.read<CurrentUserProvider>().userId == author.id;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -486,42 +487,14 @@ class PostCardTrailing extends StatelessWidget {
             padding: EdgeInsets.only(right: 8),
             child: Icon(Icons.push_pin, size: 18, color: Colors.amber),
           ),
+        // [PostMoreButton] hides itself for non-own posts; the spacer keeps
+        // the pinned card layout aligned when the menu is absent.
         if (isMe)
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
-            onSelected: (value) {
-              switch (value) {
-                case 'delete':
-                  onDelete();
-                case 'pin':
-                  onTogglePin();
-              }
-            },
-            itemBuilder: (_) => [
-              PopupMenuItem(
-                value: 'pin',
-                child: Row(
-                  children: [
-                    Icon(
-                      isPinned ? Icons.push_pin_outlined : Icons.push_pin,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(isPinned ? '取消置顶' : '置顶'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'delete',
-                child: Row(
-                  children: [
-                    Icon(Icons.delete_outline, size: 20, color: Colors.red),
-                    SizedBox(width: 8),
-                    Text('删除', style: TextStyle(color: Colors.red)),
-                  ],
-                ),
-              ),
-            ],
+          PostMoreButton(
+            author: author,
+            isPinned: isPinned,
+            onDelete: onDelete,
+            onTogglePin: onTogglePin,
           )
         else if (!isPinned)
           const SizedBox.shrink()
