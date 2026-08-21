@@ -26,10 +26,10 @@ class ApiClient {
     String? accessToken,
     String? refreshToken,
     Duration? timeout,
-  })  : _httpClient = httpClient ?? http.Client(),
-        _accessToken = accessToken,
-        _refreshToken = refreshToken,
-        _timeout = timeout ?? const Duration(seconds: 15);
+  }) : _httpClient = httpClient ?? http.Client(),
+       _accessToken = accessToken,
+       _refreshToken = refreshToken,
+       _timeout = timeout ?? const Duration(seconds: 15);
 
   // ---- Token management ----
 
@@ -62,10 +62,7 @@ class ApiClient {
     T Function(dynamic)? fromData,
   }) async {
     return _request(
-      () => _httpClient.get(
-        _buildUri(path, queryParams),
-        headers: _headers,
-      ),
+      () => _httpClient.get(_buildUri(path, queryParams), headers: _headers),
       fromData,
     );
   }
@@ -77,10 +74,7 @@ class ApiClient {
     required T Function(dynamic) fromItem,
   }) async {
     return _request(
-      () => _httpClient.get(
-        _buildUri(path, queryParams),
-        headers: _headers,
-      ),
+      () => _httpClient.get(_buildUri(path, queryParams), headers: _headers),
       (data) => PageResult.fromJson(data as Map<String, dynamic>, fromItem),
     );
   }
@@ -92,10 +86,7 @@ class ApiClient {
     Map<String, String>? queryParams,
     T Function(dynamic)? fromData,
   }) async {
-    return _request(
-      () => _sendGetWithBody(path, queryParams, body),
-      fromData,
-    );
+    return _request(() => _sendGetWithBody(path, queryParams, body), fromData);
   }
 
   /// GET request with a JSON body expecting a [PageResult].
@@ -149,7 +140,11 @@ class ApiClient {
     List<String>? imagePaths,
     T Function(dynamic)? fromData,
   }) async {
-    return _request(() => _sendMultipart('POST', path, fields: fields, imagePaths: imagePaths), fromData);
+    return _request(
+      () =>
+          _sendMultipart('POST', path, fields: fields, imagePaths: imagePaths),
+      fromData,
+    );
   }
 
   /// PUT request with multipart/form-data.
@@ -157,9 +152,19 @@ class ApiClient {
     String path, {
     Map<String, String>? fields,
     String? avatarPath,
+    String? bioHeaderImgPath,
     T Function(dynamic)? fromData,
   }) async {
-    return _request(() => _sendMultipart('PUT', path, fields: fields, avatarPath: avatarPath), fromData);
+    return _request(
+      () => _sendMultipart(
+        'PUT',
+        path,
+        fields: fields,
+        avatarPath: avatarPath,
+        bioHeaderImgPath: bioHeaderImgPath,
+      ),
+      fromData,
+    );
   }
 
   /// Shared multipart request sender.
@@ -169,6 +174,7 @@ class ApiClient {
     Map<String, String>? fields,
     List<String>? imagePaths,
     String? avatarPath,
+    String? bioHeaderImgPath,
   }) async {
     final request = http.MultipartRequest(method, Uri.parse('$baseUrl$path'));
 
@@ -181,31 +187,41 @@ class ApiClient {
     // Multiple images (for createPost)
     if (imagePaths != null) {
       for (final p in imagePaths) {
-        final file = File(p);
-        final bytes = await file.readAsBytes();
-        request.files.add(http.MultipartFile.fromBytes(
-          'images',
-          bytes,
-          filename: p.split('/').last,
-          contentType: _mediaTypeFromPath(p),
-        ));
+        await _addFilePart(request, 'images', p);
       }
     }
 
     // Single avatar file (for updateUser)
     if (avatarPath != null) {
-      final file = File(avatarPath);
-      final bytes = await file.readAsBytes();
-      request.files.add(http.MultipartFile.fromBytes(
-        'avatar',
-        bytes,
-        filename: avatarPath.split('/').last,
-        contentType: _mediaTypeFromPath(avatarPath),
-      ));
+      await _addFilePart(request, 'avatar', avatarPath);
+    }
+
+    // Bio header image file (for updateUser)
+    if (bioHeaderImgPath != null) {
+      await _addFilePart(request, 'bioHeaderImg', bioHeaderImgPath);
     }
 
     final streamed = await request.send().timeout(_timeout);
     return http.Response.fromStream(streamed);
+  }
+
+  /// Reads [path] and appends it to [request] as a multipart file part
+  /// under the given [field] name.
+  Future<void> _addFilePart(
+    http.MultipartRequest request,
+    String field,
+    String path,
+  ) async {
+    final file = File(path);
+    final bytes = await file.readAsBytes();
+    request.files.add(
+      http.MultipartFile.fromBytes(
+        field,
+        bytes,
+        filename: path.split('/').last,
+        contentType: _mediaTypeFromPath(path),
+      ),
+    );
   }
 
   /// PUT request with JSON body.
@@ -230,10 +246,7 @@ class ApiClient {
     T Function(dynamic)? fromData,
   }) async {
     return _request(
-      () => _httpClient.delete(
-        Uri.parse('$baseUrl$path'),
-        headers: _headers,
-      ),
+      () => _httpClient.delete(Uri.parse('$baseUrl$path'), headers: _headers),
       fromData,
     );
   }
@@ -325,9 +338,7 @@ class ApiClient {
         );
       }
     } on TimeoutException catch (e) {
-      return Result.error(
-        ApiException(0, '请求超时: $e'),
-      );
+      return Result.error(ApiException(0, '请求超时: $e'));
     } on http.ClientException catch (e) {
       return Result.error(e);
     } on FormatException catch (e) {

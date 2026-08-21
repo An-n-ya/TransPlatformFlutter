@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import '../../../domain/models/user.dart';
 import '../../../utils/result.dart';
 import '../../services/api/api_client.dart';
@@ -59,29 +57,22 @@ class UserRepositoryRemote implements UserRepository {
     final fields = <String, String>{};
     if (nickname != null) fields['nickname'] = nickname;
     if (bio != null) fields['bio'] = bio;
-    if (bioHeaderImg != null) fields['bioHeaderImg'] = bioHeaderImg;
 
-    // A local file path means an image picked from the gallery → multipart.
-    if (avatar != null && File(avatar).existsSync()) {
-      return _api.putMultipart<User>(
-        '/api/v1/users/me',
-        fields: fields,
-        avatarPath: avatar,
-        fromData: (data) => User.fromJson(data as Map<String, dynamic>),
-      );
-    }
-
-    // Otherwise the avatar is plain text (emoji preset, URL, ...) → JSON.
-    if (avatar != null) fields['avatar'] = avatar;
-    return _api.put<User>(
+    // avatar 和 bioHeaderImg 都是相册选中的图片文件，以 multipart 文件上传；
+    // 后端已不再提供 JSON 格式的 PUT /api/v1/users/me 接口。
+    return _api.putMultipart<User>(
       '/api/v1/users/me',
-      body: fields,
+      fields: fields,
+      avatarPath: avatar,
+      bioHeaderImgPath: bioHeaderImg,
       fromData: (data) => User.fromJson(data as Map<String, dynamic>),
     );
   }
 
   @override
-  Future<Result<void>> sendEmailVerificationCode({required String email}) async {
+  Future<Result<void>> sendEmailVerificationCode({
+    required String email,
+  }) async {
     return _api.post<void>(
       '/api/v1/users/me/email/send-code',
       body: {'email': email},
@@ -128,14 +119,14 @@ class UserRepositoryRemote implements UserRepository {
   }
 
   @override
-  Future<Result<List<User>>> getFollowers(int userId,
-      {int page = 0, int size = 20}) async {
+  Future<Result<List<User>>> getFollowers(
+    int userId, {
+    int page = 0,
+    int size = 20,
+  }) async {
     final result = await _api.getPage<User>(
       '/api/v1/users/$userId/followers',
-      queryParams: {
-        'page': page.toString(),
-        'size': size.toString(),
-      },
+      queryParams: {'page': page.toString(), 'size': size.toString()},
       fromItem: (data) => User.fromJson(data as Map<String, dynamic>),
     );
     switch (result) {
@@ -147,14 +138,14 @@ class UserRepositoryRemote implements UserRepository {
   }
 
   @override
-  Future<Result<List<User>>> getFollowees(int userId,
-      {int page = 0, int size = 20}) async {
+  Future<Result<List<User>>> getFollowees(
+    int userId, {
+    int page = 0,
+    int size = 20,
+  }) async {
     final result = await _api.getPage<User>(
       '/api/v1/users/$userId/followees',
-      queryParams: {
-        'page': page.toString(),
-        'size': size.toString(),
-      },
+      queryParams: {'page': page.toString(), 'size': size.toString()},
       fromItem: (data) => User.fromJson(data as Map<String, dynamic>),
     );
     switch (result) {
