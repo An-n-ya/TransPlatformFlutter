@@ -253,20 +253,42 @@ class UserAvatar extends StatelessWidget {
           );
         }
       },
-      child: CircleAvatar(
-        radius: 40,
-        backgroundColor: cs.primaryContainer,
-        backgroundImage: image,
-        child: image == null
-            ? Text(
-                user.nickname.isNotEmpty ? user.nickname[0].toUpperCase() : '?',
-                style: TextStyle(
-                  color: cs.onPrimaryContainer,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w500,
-                ),
-              )
-            : null,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(40),
+          border: Border.all(color: const Color(0x22CAC4D0)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x1A000000),
+              offset: Offset(0, 1),
+              blurRadius: 3,
+            ),
+            BoxShadow(
+              color: Color(0x1A000000),
+              offset: Offset(0, 1),
+              blurRadius: 2,
+              spreadRadius: -1,
+            ),
+          ],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: CircleAvatar(
+          radius: 40,
+          backgroundColor: cs.primaryContainer,
+          backgroundImage: image,
+          child: image == null
+              ? Text(
+                  user.nickname.isNotEmpty
+                      ? user.nickname[0].toUpperCase()
+                      : '?',
+                  style: TextStyle(
+                    color: cs.onPrimaryContainer,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w500,
+                  ),
+                )
+              : null,
+        ),
       ),
     );
   }
