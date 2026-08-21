@@ -128,10 +128,10 @@ class _PostCardState extends ConsumerState<PostCard> {
     final post =
         ref.watch(postCacheProvider).getById(widget.post.id) ?? widget.post;
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0x22CAC4D0)),
         boxShadow: const [
           BoxShadow(
@@ -158,7 +158,7 @@ class _PostCardState extends ConsumerState<PostCard> {
               _buildHeader(context, post, isPinned),
               if (post.content.isNotEmpty)
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                  padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
                   child: Text(
                     post.content,
                     style: const TextStyle(
@@ -170,7 +170,7 @@ class _PostCardState extends ConsumerState<PostCard> {
                 ),
               if (post.topics.isNotEmpty)
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 0),
                   child: Wrap(
                     spacing: 6,
                     runSpacing: 6,
@@ -181,19 +181,19 @@ class _PostCardState extends ConsumerState<PostCard> {
                 ),
               if (post.images.isNotEmpty)
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
                   child: PostImageGrid(images: post.images),
                 ),
               // ── Card divider ──
               const Divider(
                 thickness: 1,
-                indent: 0,
-                endIndent: 0,
+                indent: 12,
+                endIndent: 12,
                 color: Color(0x55CAC4D0),
               ),
               // ── Stats row ──
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
                 child: Row(
                   children: [
                     StatButton(
@@ -246,7 +246,7 @@ class _PostCardState extends ConsumerState<PostCard> {
     );
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 8, 8),
+      padding: const EdgeInsets.fromLTRB(12, 12, 0, 4),
       child: Row(
         children: [
           UserAvatar(user: post.author, onTap: openAuthor),
