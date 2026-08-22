@@ -246,11 +246,6 @@ class _PostCardState extends ConsumerState<PostCard> {
 
   Widget _buildHeader(BuildContext context, Post post, bool isPinned) {
     final debugMode = context.watch<GlobalConfigProvider>().debugMode;
-    final meta = [
-      formatRelativeTime(post.createdAt),
-      if (post.location != null && post.location!.isNotEmpty) post.location!,
-      if (debugMode) '#${post.id}',
-    ].join(' · ');
 
     // Inside [UserDetailPage]'s own-posts tab the author is the profile
     // owner already being viewed, so skip the navigation entirely.
@@ -285,15 +280,53 @@ class _PostCardState extends ConsumerState<PostCard> {
                     ),
                   ),
                 ),
-                // FIXME: 在meta的时间和位置前面加上下面的图标
-                Icon(Icons.timelapse_outlined, size: 14, color: Color(0xFF49454F)),
-                Icon(Icons.location_on_outlined, size: 14, color: Color(0xFF49454F)),
-                Text(
-                  meta,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF49454F),
-                  ),
+                // ── Meta row: relative time + location (+ debug id), each
+                // prefixed with its icon ──
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.alarm_outlined,
+                      size: 14,
+                      color: Color(0xFF49454F),
+                    ),
+                    const SizedBox(width: 2),
+                    Text(
+                      formatRelativeTime(post.createdAt),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF49454F),
+                      ),
+                    ),
+                    if (post.location != null &&
+                        post.location!.isNotEmpty) ...[
+                      const SizedBox(width: 8),
+                      const Icon(
+                        Icons.location_on_outlined,
+                        size: 14,
+                        color: Color(0xFF49454F),
+                      ),
+                      const SizedBox(width: 2),
+                      Text(
+                        post.location!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF49454F),
+                        ),
+                      ),
+                    ],
+                    if (debugMode) ...[
+                      const SizedBox(width: 8),
+                      Text(
+                        '#${post.id}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF49454F),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ],
             ),
