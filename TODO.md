@@ -34,10 +34,11 @@
 - [ ] 邀请码有效性校验，避免用户输入完注册信息后发现邀请码无效
 - [ ] 帖子内容编辑功能
 - [ ] 帖子草稿保存功能
-- [ ] 关注按钮BUG修复(有时currentUserRepository会丢掉currentUserId的状态， 导致关注按钮出错，研究下该怎么修复currentUserId状态的问题)
+- [x] 关注按钮BUG修复(有时currentUserRepository会丢掉currentUserId的状态(退出应用后重新进入会导致userId丢掉)， 导致关注按钮出错，研究下该怎么修复currentUserId状态的问题!!!重要)
 - [ ] UserDetail页面点击自己的贴文头像就不要在弹出用户详情页面
 - [ ] Theme重构，项目中不要使用颜色常量，改为使用主题变量。
     - [ ] 主题还应该包含其他效果，比如字体大小，字体颜色，阴影，动画
+- [ ] UserDetialPage在设置完用户资料后，需要重新从服务器获取用户信息，否则页面不会更新
 - [x] 当添加到9张照片时应当无效添加按钮
 
 - [x] Resend 配置电子邮件验证码服务

@@ -48,10 +48,7 @@ class _PostFeedState extends State<PostFeed> {
       itemCount: widget.posts.length,
       itemBuilder: (_, i) {
         final post = widget.posts[i];
-        return PostCard(
-          post: post,
-          onPostDeleted: widget.onPostDeleted,
-        );
+        return PostCard(post: post, onPostDeleted: widget.onPostDeleted);
       },
     );
 
@@ -108,9 +105,7 @@ class _PostCardState extends ConsumerState<PostCard> {
   }
 
   Future<void> _toggleLike() async {
-    await ref
-        .read(postInteractionProvider.notifier)
-        .toggleLike(widget.post.id);
+    await ref.read(postInteractionProvider.notifier).toggleLike(widget.post.id);
   }
 
   Future<void> _toggleCollect() async {
@@ -181,10 +176,11 @@ class _PostCardState extends ConsumerState<PostCard> {
                 ),
               if (post.images.isNotEmpty)
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                  padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
                   child: PostImageGrid(images: post.images),
                 ),
               // ── Card divider ──
+              const SizedBox(height: 8),
               const Divider(
                 thickness: 1,
                 indent: 12,

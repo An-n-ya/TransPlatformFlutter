@@ -1,9 +1,15 @@
 import 'package:flutter/foundation.dart';
 
+import '../../domain/models/user.dart';
+
 /// Holds the current authenticated user's global state.
 ///
 /// Set after successful login, consumed via Provider anywhere in the app
 /// to avoid redundant API calls.
+///
+/// Since providers are recreated on app restart, [SplashPage] restores this
+/// state by re-executing [setUserId] (via [setCurrentUser]) after it
+/// validates the saved session against the backend.
 class CurrentUserProvider extends ChangeNotifier {
   int? _userId;
   int? _pinnedPostId;
@@ -28,8 +34,22 @@ class CurrentUserProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Set the current user's id after login/register.
+  ///
+  /// Re-executed on app restart by [SplashPage] once the saved session has
+  /// been validated against the backend (see [setCurrentUser]).
   void setUserId(int id) {
     _userId = id;
+    notifyListeners();
+  }
+
+  /// Restore the current user's global state from a freshly fetched [User]
+  /// profile (e.g. session restore on app restart).
+  void setCurrentUser(User user) {
+    _userId = user.id;
+    if (user.pinnedPostId != null) {
+      _pinnedPostId = user.pinnedPostId;
+    }
     notifyListeners();
   }
 
