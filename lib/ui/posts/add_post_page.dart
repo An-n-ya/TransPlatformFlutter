@@ -4,10 +4,13 @@ import 'dart:math';
 import 'package:easy_image_viewer/easy_image_viewer.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:location/location.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/repositories/post/post_repository.dart';
+import '../../data/repositories/location/location_repository.dart';
 import '../../data/repositories/user/user_repository.dart';
+import '../../domain/models/geo_location.dart';
 import '../../domain/models/post.dart';
 import '../../domain/models/topic.dart';
 import '../../domain/models/user.dart';
@@ -30,6 +33,8 @@ class _AddPostPageState extends State<AddPostPage> {
   final List<String> _mentionedUsers = [];
   late Future<Result<User>> _userFuture;
   bool _isSubmitting = false;
+  bool _isLocating = false;
+  String? _locationLabel;
 
   bool get _canSubmit =>
       !_isSubmitting &&
@@ -127,6 +132,7 @@ class _AddPostPageState extends State<AddPostPage> {
   }
 
   Future<void> _submitPost() async {
+    
     final content = _textController.text.trim();
     if (content.isEmpty && _selectedImages.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -140,6 +146,7 @@ class _AddPostPageState extends State<AddPostPage> {
     // Pass the selected topic IDs to the post
     final result = await context.read<PostRepository>().createPost(
           content: content,
+          location: _locationLabel,
           images:
               _selectedImages.isNotEmpty
                   ? _selectedImages.map((f) => f.path).toList()
@@ -169,6 +176,76 @@ class _AddPostPageState extends State<AddPostPage> {
     final s = e.toString();
     final idx = s.indexOf('): ');
     return idx != -1 ? s.substring(idx + 3) : s;
+  }
+
+  /// 获取用户当前位置，并调用后端逆地理编码接口解析城市，
+  /// 期间在“标记地点”tile 上展示 loading 状态，成功后把城市名替换到副标题。
+  Future<void> _markLocation() async {
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _isLocating = true);
+    try {
+      final location = Location();
+
+      // 1. 确保系统定位服务已开启。
+      if (!await location.serviceEnabled()) {
+        final enabled = await location.requestService();
+        if (!enabled) {
+          if (!mounted) return;
+          setState(() => _isLocating = false);
+          messenger.showSnackBar(
+            const SnackBar(content: Text('定位服务未开启，无法获取位置')),
+          );
+          return;
+        }
+      }
+
+      // 2. 检查并申请定位权限。
+      var permission = await location.hasPermission();
+      if (permission == PermissionStatus.denied) {
+        permission = await location.requestPermission();
+      }
+      if (permission == PermissionStatus.denied ||
+          permission == PermissionStatus.deniedForever) {
+        if (!mounted) return;
+        setState(() => _isLocating = false);
+        messenger.showSnackBar(
+          const SnackBar(content: Text('未获得定位权限，无法获取位置')),
+        );
+        return;
+      }
+
+      // 3. 获取当前位置（经纬度）。
+      final position = await location.getLocation();
+      if (!mounted) return;
+      final latitude = position.latitude;
+      final longitude = position.longitude;
+
+      // 4. 调用后端逆地理编码接口，将坐标解析为城市名称。
+      final result = await context
+          .read<LocationRepository>()
+          .reverseGeocode(latitude: latitude, longitude: longitude);
+      if (!mounted) return;
+
+      switch (result) {
+        case Ok<GeoLocation>():
+          // 成功后不再用 SnackBar，而是把城市名替换到副标题。
+          setState(() {
+            _isLocating = false;
+            _locationLabel = result.value.location;
+          });
+        case Error<GeoLocation>():
+          setState(() => _isLocating = false);
+          messenger.showSnackBar(
+            SnackBar(content: Text('获取位置失败：${_extractError(result.error)}')),
+          );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLocating = false);
+      messenger.showSnackBar(
+        SnackBar(content: Text('获取位置失败：$e')),
+      );
+    }
   }
 
   @override
@@ -206,8 +283,9 @@ class _AddPostPageState extends State<AddPostPage> {
                     _OptionTile(
                       icon: Icons.place_outlined,
                       title: '标记地点',
-                      subtitle: '添加你所在的位置',
-                      onTap: () {},
+                      subtitle: _locationLabel ?? '添加你所在的位置',
+                      loading: _isLocating,
+                      onTap: _markLocation,
                     ),
                   ],
                 ),
@@ -633,18 +711,22 @@ class _OptionTile extends StatelessWidget {
   final String subtitle;
   final VoidCallback onTap;
 
+  /// 为 true 时在右侧显示 loading 指示器，并禁用点击。
+  final bool loading;
+
   const _OptionTile({
     required this.icon,
     required this.title,
     required this.subtitle,
     required this.onTap,
+    this.loading = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return InkWell(
-      onTap: onTap,
+      onTap: loading ? null : onTap,
       child: Container(
         height: 56,
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -686,7 +768,18 @@ class _OptionTile extends StatelessWidget {
                 ],
               ),
             ),
-            Icon(Icons.chevron_right, size: 18, color: cs.onSurfaceVariant),
+            if (loading)
+              const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            else
+              Icon(
+                Icons.chevron_right,
+                size: 18,
+                color: cs.onSurfaceVariant,
+              ),
           ],
         ),
       ),

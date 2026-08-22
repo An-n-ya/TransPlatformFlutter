@@ -4,6 +4,9 @@ import 'package:provider/single_child_widget.dart';
 import '../data/repositories/auth/auth_repository.dart';
 import '../data/repositories/auth/auth_repository_local.dart';
 import '../data/repositories/auth/auth_repository_remote.dart';
+import '../data/repositories/location/location_repository.dart';
+import '../data/repositories/location/location_repository_local.dart';
+import '../data/repositories/location/location_repository_remote.dart';
 import '../data/repositories/notification/notification_repository.dart';
 import '../data/repositories/notification/notification_repository_local.dart';
 import '../data/repositories/notification/notification_repository_remote.dart';
@@ -43,6 +46,7 @@ List<SingleChildWidget> get providersLocal => [
       Provider<PostRepository>(create: (_) => PostRepositoryLocal()),
       Provider<UserRepository>(create: (_) => UserRepositoryLocal()),
       Provider<AuthRepository>(create: (_) => AuthRepositoryLocal()),
+      Provider<LocationRepository>(create: (_) => LocationRepositoryLocal()),
       Provider<NotificationRepository>(
           create: (_) => NotificationRepositoryLocal()),
       Provider<SearchRepository>(create: (_) => SearchRepositoryLocal()),
@@ -60,6 +64,9 @@ List<SingleChildWidget> get providersRemote => [
       ),
       ProxyProvider<ApiClient, AuthRepository>(
         update: (_, api, _) => AuthRepositoryRemote(apiClient: api),
+      ),
+      ProxyProvider<ApiClient, LocationRepository>(
+        update: (_, api, _) => LocationRepositoryRemote(apiClient: api),
       ),
       ProxyProvider<ApiClient, NotificationRepository>(
         update: (_, api, _) => NotificationRepositoryRemote(apiClient: api),
