@@ -1,9 +1,11 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
+import '../../data/cache/user_cache.dart';
 import '../../data/repositories/user/user_repository.dart';
 import '../../domain/models/user.dart';
 import '../../utils/result.dart';
@@ -12,16 +14,16 @@ import 'reset_email_page.dart';
 /// Edit user profile page.
 ///
 /// Allows changing nickname, bio, avatar, bio header image, and email.
-class ProfilePage extends StatefulWidget {
+class ProfilePage extends ConsumerStatefulWidget {
   final User? existingUser;
 
   const ProfilePage({super.key, this.existingUser});
 
   @override
-  State<ProfilePage> createState() => _ProfilePageState();
+  ConsumerState<ProfilePage> createState() => _ProfilePageState();
 }
 
-class _ProfilePageState extends State<ProfilePage> {
+class _ProfilePageState extends ConsumerState<ProfilePage> {
   final _picker = ImagePicker();
   late TextEditingController _nicknameController;
   late TextEditingController _bioController;
@@ -103,6 +105,10 @@ class _ProfilePageState extends State<ProfilePage> {
 
     switch (result) {
       case Ok<User>():
+        // Keep the SSOT user cache in sync so pages that are still open
+        // (e.g. UserDetailPage beneath this one) reflect the edits right
+        // away instead of showing stale profile data.
+        ref.read(userCacheProvider.notifier).upsert(result.value);
         Navigator.of(context).pop(true); // return true = saved
       case Error<User>():
         setState(() {

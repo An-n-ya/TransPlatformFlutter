@@ -92,6 +92,10 @@ class _UserPostsTabState extends State<UserPostsTab> {
                     posts: value,
                     onPostDeleted: () => setState(_loadPosts),
                     onRefresh: _refreshPosts,
+                    // Posts here are all authored by the profile owner already
+                    // being viewed — tapping their avatar must not re-open the
+                    // same profile page.
+                    disableAuthorTap: true,
                   ),
                 ),
           Error<List<Post>>(:final error) => _buildError(error),

@@ -5,7 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/cache/user_cache.dart';
 import '../../domain/models/user.dart';
-import '../../providers/user_providers.dart';
+import '../../providers/repository_providers.dart';
+import '../../utils/result.dart';
 import 'user_buttons.dart';
 import 'user_header.dart';
 import 'user_tabs.dart';
@@ -15,8 +16,9 @@ import 'user_tabs.dart';
 /// Displays cover image, avatar, user info, tabs (posts/liked/saved),
 /// and a content feed.
 ///
-/// The profile is served from the SSOT user cache; [userDetailProvider] loads
-/// the full profile in the background on first view so counts stay fresh.
+/// The profile is served from the SSOT user cache; on every entry the page
+/// re-fetches the profile from the server so freshly edited data (nickname,
+/// avatar, bio, …) is never stale, and upserts it back into the cache.
 class UserDetailPage extends ConsumerStatefulWidget {
   final User user;
   final bool isMe;
@@ -31,12 +33,21 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage> {
   @override
   void initState() {
     super.initState();
-    // Load the full profile (counts, pinned post) in the background; the
-    // loader serves from the SSOT cache on repeat visits. Deferred so the
-    // cache is not touched while the widget tree is building.
-    Future(() {
-      if (mounted) {
-        ref.read(userDetailProvider(widget.user.id));
+    // Always re-fetch the full profile from the server on entry so the page
+    // shows fresh data even if the user edited their profile in another flow
+    // (settings) since this page was last shown. Deferred so the cache is not
+    // touched while the widget tree is building; on error keep the cached /
+    // passed-in profile.
+    Future(() async {
+      if (!mounted) return;
+      final result =
+          await ref.read(userRepositoryProvider).getUser(widget.user.id);
+      if (!mounted) return;
+      switch (result) {
+        case Ok<User>(:final value):
+          ref.read(userCacheProvider.notifier).upsert(value);
+        case Error<User>():
+          break; // keep showing the cached / passed-in profile
       }
     });
   }

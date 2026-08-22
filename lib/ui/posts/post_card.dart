@@ -28,11 +28,17 @@ class PostFeed extends StatefulWidget {
   final VoidCallback? onPostDeleted;
   final Future<void> Function()? onRefresh;
 
+  /// When true, tapping a post's author avatar/nickname does not navigate.
+  /// Used inside [UserDetailPage]'s own-posts tab to avoid re-opening the
+  /// profile page for the user already being viewed.
+  final bool disableAuthorTap;
+
   const PostFeed({
     super.key,
     required this.posts,
     this.onPostDeleted,
     this.onRefresh,
+    this.disableAuthorTap = false,
   });
 
   @override
@@ -48,7 +54,11 @@ class _PostFeedState extends State<PostFeed> {
       itemCount: widget.posts.length,
       itemBuilder: (_, i) {
         final post = widget.posts[i];
-        return PostCard(post: post, onPostDeleted: widget.onPostDeleted);
+        return PostCard(
+          post: post,
+          onPostDeleted: widget.onPostDeleted,
+          disableAuthorTap: widget.disableAuthorTap,
+        );
       },
     );
 
@@ -70,6 +80,10 @@ class PostCard extends ConsumerStatefulWidget {
   /// detail page. Disabled inside [PostDetailPage] to avoid re-entry.
   final bool openDetailOnTap;
 
+  /// When true, tapping the author's avatar/nickname does not navigate to
+  /// the author's [UserDetailPage] (e.g. inside that page's own-posts tab).
+  final bool disableAuthorTap;
+
   const PostCard({
     super.key,
     required this.post,
@@ -77,6 +91,7 @@ class PostCard extends ConsumerStatefulWidget {
     this.trailing,
     this.onCommentTap,
     this.openDetailOnTap = true,
+    this.disableAuthorTap = false,
   });
 
   @override
@@ -237,9 +252,15 @@ class _PostCardState extends ConsumerState<PostCard> {
       if (debugMode) '#${post.id}',
     ].join(' · ');
 
-    void openAuthor() => Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => UserDetailPage(user: post.author)),
-    );
+    // Inside [UserDetailPage]'s own-posts tab the author is the profile
+    // owner already being viewed, so skip the navigation entirely.
+    final VoidCallback? openAuthor = widget.disableAuthorTap
+        ? null
+        : () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => UserDetailPage(user: post.author),
+              ),
+            );
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 12, 0, 4),
@@ -264,6 +285,9 @@ class _PostCardState extends ConsumerState<PostCard> {
                     ),
                   ),
                 ),
+                // FIXME: 在meta的时间和位置前面加上下面的图标
+                Icon(Icons.timelapse_outlined, size: 14, color: Color(0xFF49454F)),
+                Icon(Icons.location_on_outlined, size: 14, color: Color(0xFF49454F)),
                 Text(
                   meta,
                   style: const TextStyle(
