@@ -75,6 +75,7 @@ dev_dependencies:
   riverpod_generator: ^2.6.5
   riverpod_lint: ^2.6.5
   custom_lint: ^0.7.6
+  flutter_launcher_icons: ^0.14.4
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -119,3 +120,21 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+# App launcher icon configuration (run: dart run flutter_launcher_icons)
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/logoTP.png"
+  remove_alpha_ios: true
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/images/logoTP_Transparent.png"
+  web:
+    generate: true
+    image_path: "assets/images/logoTP.png"
+    background_color: "#FFFFFF"
+    theme_color: "#FFFFFF"
+  windows:
+    generate: false
+  macos:
+    generate: false

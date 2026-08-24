@@ -37,6 +37,7 @@ class MainApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, _) => MaterialApp(
+        title: 'YX',
         scaffoldMessengerKey: rootScaffoldMessengerKey,
         theme: buildLightTheme(),
         darkTheme: buildDarkTheme(),
