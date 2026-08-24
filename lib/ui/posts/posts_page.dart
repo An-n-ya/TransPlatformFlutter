@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/cache/post_cache.dart';
+import '../../providers/feed_pagination_provider.dart';
 import '../../providers/post_providers.dart';
 import 'post_card.dart';
 
@@ -29,11 +30,7 @@ class Posts extends ConsumerWidget {
         final posts = ref.watch(postCacheProvider).getList('feed');
         return posts.isEmpty
             ? const Center(child: Text('暂无内容'))
-            : PostFeed(
-                posts: posts,
-                onRefresh: () =>
-                    ref.read(feedLoaderProvider.notifier).refresh(),
-              );
+            : const _FeedListView();
       },
     );
   }
@@ -42,6 +39,93 @@ class Posts extends ConsumerWidget {
     final s = e.toString();
     final idx = s.indexOf('): ');
     return idx != -1 ? s.substring(idx + 3) : s;
+  }
+}
+
+/// Renders the loaded feed with cursor-based infinite scroll: when the user
+/// scrolls near the bottom, [feedPaginationProvider] appends the next page.
+class _FeedListView extends ConsumerStatefulWidget {
+  const _FeedListView();
+
+  @override
+  ConsumerState<_FeedListView> createState() => _FeedListViewState();
+}
+
+class _FeedListViewState extends ConsumerState<_FeedListView> {
+  final _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+    // A short first page (< viewport height) never fires scroll events, so
+    // kick pagination off once after the first frame.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _onScroll());
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    if (_scrollController.position.extentAfter < 200) {
+      ref.read(feedPaginationProvider.notifier).loadMore();
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final pagination = ref.watch(feedPaginationProvider);
+    final posts = ref.watch(postCacheProvider).getList('feed');
+    return PostFeed(
+      posts: posts,
+      onRefresh: () => ref.read(feedLoaderProvider.notifier).refresh(),
+      scrollController: _scrollController,
+      footer: _buildFooter(pagination),
+    );
+  }
+
+  Widget _buildFooter(FeedPaginationState pagination) {
+    if (pagination.loadingMore) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 16),
+        child: Center(
+          child: SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      );
+    }
+    if (pagination.error != null) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Center(
+          child: TextButton.icon(
+            onPressed: () =>
+                ref.read(feedPaginationProvider.notifier).loadMore(),
+            icon: const Icon(Icons.refresh, size: 18),
+            label: const Text('加载失败，点击重试'),
+          ),
+        ),
+      );
+    }
+    if (!pagination.hasMore) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Center(
+          child: Text(
+            '没有更多了',
+            style: TextStyle(color: Theme.of(context).colorScheme.outline),
+          ),
+        ),
+      );
+    }
+    return const SizedBox.shrink();
   }
 }
 

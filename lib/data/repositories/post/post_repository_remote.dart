@@ -15,7 +15,7 @@ class PostRepositoryRemote implements PostRepository {
   PostRepositoryRemote({required ApiClient apiClient}) : _api = apiClient;
 
   @override
-  Future<Result<CursorPage<Post>>> getFeed({int? cursor, int size = 5}) async {
+  Future<Result<CursorPage<Post>>> getFeed({int? cursor, int size = 20}) async {
     // Cursor-based pagination: omit `cursor` for the first page, then echo
     // back the previous page's `nextCursor` (last post id of the page).
     return _api.get<CursorPage<Post>>(

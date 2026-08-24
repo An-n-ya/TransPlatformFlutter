@@ -6,6 +6,7 @@ import '../data/services/api/page_result.dart';
 import '../domain/models/comment.dart';
 import '../domain/models/post.dart';
 import '../utils/result.dart';
+import 'feed_pagination_provider.dart';
 import 'repository_providers.dart';
 
 part 'post_providers.g.dart';
@@ -22,6 +23,9 @@ class FeedLoader extends _$FeedLoader {
     switch (result) {
       case Ok<CursorPage<Post>>(:final value):
         ref.read(postCacheProvider.notifier).upsertAll('feed', value.content);
+        ref
+            .read(feedPaginationProvider.notifier)
+            .reset(cursor: value.nextCursor, hasMore: value.hasMore);
         return value.content;
       case Error<CursorPage<Post>>(:final error):
         throw error;
@@ -36,6 +40,9 @@ class FeedLoader extends _$FeedLoader {
       switch (result) {
         case Ok<CursorPage<Post>>(:final value):
           ref.read(postCacheProvider.notifier).upsertAll('feed', value.content);
+          ref
+              .read(feedPaginationProvider.notifier)
+              .reset(cursor: value.nextCursor, hasMore: value.hasMore);
           return value.content;
         case Error<CursorPage<Post>>(:final error):
           throw error;

@@ -28,6 +28,13 @@ class PostFeed extends StatefulWidget {
   final VoidCallback? onPostDeleted;
   final Future<void> Function()? onRefresh;
 
+  /// Optional controller so callers can drive infinite scroll.
+  final ScrollController? scrollController;
+
+  /// Optional widget rendered after the last post (loading spinner, "no more"
+  /// hint, retry button, …).
+  final Widget? footer;
+
   /// When true, tapping a post's author avatar/nickname does not navigate.
   /// Used inside [UserDetailPage]'s own-posts tab to avoid re-opening the
   /// profile page for the user already being viewed.
@@ -38,6 +45,8 @@ class PostFeed extends StatefulWidget {
     required this.posts,
     this.onPostDeleted,
     this.onRefresh,
+    this.scrollController,
+    this.footer,
     this.disableAuthorTap = false,
   });
 
@@ -49,10 +58,14 @@ class _PostFeedState extends State<PostFeed> {
   @override
   Widget build(BuildContext context) {
     final listView = ListView.builder(
+      controller: widget.scrollController,
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(8),
-      itemCount: widget.posts.length,
+      itemCount: widget.posts.length + (widget.footer != null ? 1 : 0),
       itemBuilder: (_, i) {
+        if (widget.footer != null && i >= widget.posts.length) {
+          return widget.footer!;
+        }
         final post = widget.posts[i];
         return PostCard(
           post: post,

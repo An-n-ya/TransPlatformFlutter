@@ -79,6 +79,26 @@ class PostCache extends _$PostCache {
     );
   }
 
+  /// Append a page of posts to an existing list query (cursor pagination),
+  /// deduplicating by id. Entities are upserted so cards stay fresh.
+  void appendAll(String queryKey, List<Post> posts) {
+    if (posts.isEmpty) return;
+    final newPosts = {...state.posts};
+    for (final p in posts) {
+      newPosts[p.id] = p;
+    }
+    final existing = state.listQueries[queryKey] ?? const <int>[];
+    final appended =
+        posts.map((p) => p.id).where((id) => !existing.contains(id));
+    state = state.copyWith(
+      posts: newPosts,
+      listQueries: {
+        ...state.listQueries,
+        queryKey: [...existing, ...appended],
+      },
+    );
+  }
+
   void remove(int id) {
     final newPosts = {...state.posts}..remove(id);
     state = state.copyWith(posts: newPosts);
