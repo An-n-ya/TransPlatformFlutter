@@ -15,21 +15,20 @@ class PostRepositoryRemote implements PostRepository {
   PostRepositoryRemote({required ApiClient apiClient}) : _api = apiClient;
 
   @override
-  Future<Result<List<Post>>> getFeed({int page = 0, int size = 20}) async {
-    final result = await _api.getPage<Post>(
+  Future<Result<CursorPage<Post>>> getFeed({int? cursor, int size = 5}) async {
+    // Cursor-based pagination: omit `cursor` for the first page, then echo
+    // back the previous page's `nextCursor` (last post id of the page).
+    return _api.get<CursorPage<Post>>(
       '/api/v1/feed',
       queryParams: {
-        'page': page.toString(),
+        if (cursor != null) 'cursor': cursor.toString(),
         'size': size.toString(),
       },
-      fromItem: (data) => Post.fromJson(data as Map<String, dynamic>),
+      fromData: (data) => CursorPage.fromJson(
+        data as Map<String, dynamic>,
+        (item) => Post.fromJson(item as Map<String, dynamic>),
+      ),
     );
-    switch (result) {
-      case Ok<PageResult<Post>>():
-        return Result.ok(result.value.content);
-      case Error<PageResult<Post>>():
-        return Result.error(result.error);
-    }
   }
 
   @override

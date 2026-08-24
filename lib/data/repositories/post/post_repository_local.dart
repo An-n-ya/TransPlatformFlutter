@@ -2,6 +2,7 @@ import '../../../domain/models/comment.dart';
 import '../../../domain/models/post.dart';
 import '../../../domain/models/user.dart';
 import '../../../utils/result.dart';
+import '../../services/api/page_result.dart';
 import 'post_repository.dart';
 
 /// Local implementation of [PostRepository].
@@ -9,9 +10,9 @@ import 'post_repository.dart';
 /// Returns hardcoded sample data for UI development/test.
 class PostRepositoryLocal implements PostRepository {
   @override
-  Future<Result<List<Post>>> getFeed({int page = 0, int size = 20}) async {
+  Future<Result<CursorPage<Post>>> getFeed({int? cursor, int size = 20}) async {
     await Future.delayed(const Duration(milliseconds: 300));
-    return Result.ok(_samplePosts);
+    return Result.ok(CursorPage(content: _samplePosts, hasMore: false));
   }
 
   @override

@@ -2,6 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../data/cache/comment_cache.dart';
 import '../data/cache/post_cache.dart';
+import '../data/services/api/page_result.dart';
 import '../domain/models/comment.dart';
 import '../domain/models/post.dart';
 import '../utils/result.dart';
@@ -19,10 +20,10 @@ class FeedLoader extends _$FeedLoader {
   Future<List<Post>> build() async {
     final result = await ref.read(postRepositoryProvider).getFeed();
     switch (result) {
-      case Ok<List<Post>>(:final value):
-        ref.read(postCacheProvider.notifier).upsertAll('feed', value);
-        return value;
-      case Error<List<Post>>(:final error):
+      case Ok<CursorPage<Post>>(:final value):
+        ref.read(postCacheProvider.notifier).upsertAll('feed', value.content);
+        return value.content;
+      case Error<CursorPage<Post>>(:final error):
         throw error;
     }
   }
@@ -33,10 +34,10 @@ class FeedLoader extends _$FeedLoader {
     state = await AsyncValue.guard(() async {
       final result = await ref.read(postRepositoryProvider).getFeed();
       switch (result) {
-        case Ok<List<Post>>(:final value):
-          ref.read(postCacheProvider.notifier).upsertAll('feed', value);
-          return value;
-        case Error<List<Post>>(:final error):
+        case Ok<CursorPage<Post>>(:final value):
+          ref.read(postCacheProvider.notifier).upsertAll('feed', value.content);
+          return value.content;
+        case Error<CursorPage<Post>>(:final error):
           throw error;
       }
     });

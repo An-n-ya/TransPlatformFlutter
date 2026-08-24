@@ -10,6 +10,42 @@
 ///   "hasNext": true
 /// }
 /// ```
+/// Cursor-based pagination result (used by the feed endpoint).
+///
+/// ```json
+/// {
+///   "content": [...],
+///   "nextCursor": 71,
+///   "hasMore": true
+/// }
+/// ```
+class CursorPage<T> {
+  final List<T> content;
+  final int? nextCursor;
+  final bool hasMore;
+
+  const CursorPage({
+    required this.content,
+    this.nextCursor,
+    required this.hasMore,
+  });
+
+  factory CursorPage.fromJson(
+    Map<String, dynamic> json,
+    T Function(dynamic) fromItem,
+  ) {
+    final list = (json['content'] as List?)
+            ?.map((e) => fromItem(e))
+            .toList() ??
+        <T>[];
+    return CursorPage(
+      content: list,
+      nextCursor: (json['nextCursor'] as num?)?.toInt(),
+      hasMore: json['hasMore'] as bool? ?? false,
+    );
+  }
+}
+
 class PageResult<T> {
   final List<T> content;
   final int page;

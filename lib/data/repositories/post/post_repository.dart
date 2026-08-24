@@ -1,6 +1,7 @@
 import '../../../domain/models/comment.dart';
 import '../../../domain/models/post.dart';
 import '../../../utils/result.dart';
+import '../../services/api/page_result.dart';
 
 /// Data source for posts and feed.
 ///
@@ -8,8 +9,11 @@ import '../../../utils/result.dart';
 /// - [PostRepositoryLocal] — hardcoded sample data for UI development
 /// - [PostRepositoryRemote] — calls the backend API
 abstract class PostRepository {
-  /// Get the homepage feed (paginated).
-  Future<Result<List<Post>>> getFeed({int page = 0, int size = 20});
+  /// Get the homepage feed (cursor-paginated).
+  ///
+  /// Omit [cursor] for the first page; pass back [CursorPage.nextCursor]
+  /// for subsequent pages.
+  Future<Result<CursorPage<Post>>> getFeed({int? cursor, int size = 20});
 
   /// Get a single post by ID.
   Future<Result<Post>> getPost(int postId);
