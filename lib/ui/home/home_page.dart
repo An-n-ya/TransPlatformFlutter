@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:trans_platform/ui/home/search_page.dart';
 
 import '../../data/repositories/notification/notification_repository.dart';
+import '../../domain/models/feed_type.dart';
 import '../../utils/result.dart';
 
 import '../settings/settings_page.dart';
@@ -10,7 +11,7 @@ import '../notification/notification_page.dart';
 import '../posts/add_post_page.dart';
 import '../posts/posts_page.dart';
 
-/// "首页" tab — a page with its own sub-tab bar (广场/附近/医疗/生活).
+/// "首页" tab — three feed streams (广场 / 关注 / 附近), one per [FeedType].
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
@@ -20,16 +21,11 @@ class HomePage extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     return DefaultTabController(
-      length: 4,
+      length: FeedType.values.length,
       child: Scaffold(
         appBar: AppBar(
-          bottom: const TabBar(
-            tabs: [
-              Tab(text: '广场'),
-              Tab(text: '附近'),
-              Tab(text: '医疗'),
-              Tab(text: '生活'),
-            ],
+          bottom: TabBar(
+            tabs: [for (final t in FeedType.values) Tab(text: t.label)],
           ),
           leading: IconButton(
             icon: const Icon(Icons.search),
@@ -70,12 +66,9 @@ class HomePage extends StatelessWidget {
           ],
           title: const Text('TransPlatform'),
         ),
-        body: const TabBarView(
+        body: TabBarView(
           children: [
-            Posts(),
-            Icon(Icons.directions_transit),
-            Icon(Icons.directions_bike),
-            Icon(Icons.directions_bike),
+            for (final t in FeedType.values) Posts(type: t),
           ],
         ),
         floatingActionButton: FloatingActionButton(

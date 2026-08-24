@@ -6,7 +6,7 @@ part of 'post_cache.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$postCacheHash() => r'ed9373fd30734d2a5093a8251723233610b80403';
+String _$postCacheHash() => r'36ca0ed9c6f94a028134e7f70dc362cd7b3a733b';
 
 /// In-memory Single Source of Truth for Post entities.
 ///

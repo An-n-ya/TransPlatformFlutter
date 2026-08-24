@@ -1,4 +1,5 @@
 import '../../../domain/models/comment.dart';
+import '../../../domain/models/feed_type.dart';
 import '../../../domain/models/post.dart';
 import '../../../domain/models/user.dart';
 import '../../../utils/result.dart';
@@ -10,8 +11,16 @@ import 'post_repository.dart';
 /// Returns hardcoded sample data for UI development/test.
 class PostRepositoryLocal implements PostRepository {
   @override
-  Future<Result<CursorPage<Post>>> getFeed({int? cursor, int size = 20}) async {
+  Future<Result<CursorPage<Post>>> getFeed({
+    FeedType type = FeedType.plaza,
+    int? cursor,
+    int size = 20,
+  }) async {
     await Future.delayed(const Duration(milliseconds: 300));
+    // Nearby has no location data in the sample set.
+    if (type == FeedType.nearby) {
+      return Result.ok(const CursorPage(content: [], hasMore: false));
+    }
     return Result.ok(CursorPage(content: _samplePosts, hasMore: false));
   }
 

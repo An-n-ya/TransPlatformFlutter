@@ -6,28 +6,7 @@ part of 'post_providers.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$feedLoaderHash() => r'0c115a654be33332c8cb36b17da862fb3af09306';
-
-/// Loads the homepage feed into the post cache.
-///
-/// UI renders from [PostCache.getList] with key 'feed'; this provider only
-/// drives the initial loading/error state and keeps the SSOT fresh.
-///
-/// Copied from [FeedLoader].
-@ProviderFor(FeedLoader)
-final feedLoaderProvider =
-    AutoDisposeAsyncNotifierProvider<FeedLoader, List<Post>>.internal(
-      FeedLoader.new,
-      name: r'feedLoaderProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$feedLoaderHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
-
-typedef _$FeedLoader = AutoDisposeAsyncNotifier<List<Post>>;
-String _$postDetailHash() => r'fb832e9a598d50bf120f43a15ae215e8a1d123ea';
+String _$feedLoaderHash() => r'e7803b417e503f919758ebc8773789fe88c4acac';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -49,6 +28,173 @@ class _SystemHash {
     return 0x1fffffff & (hash + ((0x00003fff & hash) << 15));
   }
 }
+
+abstract class _$FeedLoader
+    extends BuildlessAutoDisposeAsyncNotifier<List<Post>> {
+  late final FeedType type;
+
+  FutureOr<List<Post>> build(FeedType type);
+}
+
+/// Loads the first page of a feed stream into the post cache.
+///
+/// One instance per [FeedType] (plaza / following / nearby). UI renders from
+/// [PostCache.getList] with key `type.cacheKey`; this provider only drives the
+/// initial loading/error state and keeps the SSOT fresh.
+///
+/// Copied from [FeedLoader].
+@ProviderFor(FeedLoader)
+const feedLoaderProvider = FeedLoaderFamily();
+
+/// Loads the first page of a feed stream into the post cache.
+///
+/// One instance per [FeedType] (plaza / following / nearby). UI renders from
+/// [PostCache.getList] with key `type.cacheKey`; this provider only drives the
+/// initial loading/error state and keeps the SSOT fresh.
+///
+/// Copied from [FeedLoader].
+class FeedLoaderFamily extends Family<AsyncValue<List<Post>>> {
+  /// Loads the first page of a feed stream into the post cache.
+  ///
+  /// One instance per [FeedType] (plaza / following / nearby). UI renders from
+  /// [PostCache.getList] with key `type.cacheKey`; this provider only drives the
+  /// initial loading/error state and keeps the SSOT fresh.
+  ///
+  /// Copied from [FeedLoader].
+  const FeedLoaderFamily();
+
+  /// Loads the first page of a feed stream into the post cache.
+  ///
+  /// One instance per [FeedType] (plaza / following / nearby). UI renders from
+  /// [PostCache.getList] with key `type.cacheKey`; this provider only drives the
+  /// initial loading/error state and keeps the SSOT fresh.
+  ///
+  /// Copied from [FeedLoader].
+  FeedLoaderProvider call(FeedType type) {
+    return FeedLoaderProvider(type);
+  }
+
+  @override
+  FeedLoaderProvider getProviderOverride(
+    covariant FeedLoaderProvider provider,
+  ) {
+    return call(provider.type);
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'feedLoaderProvider';
+}
+
+/// Loads the first page of a feed stream into the post cache.
+///
+/// One instance per [FeedType] (plaza / following / nearby). UI renders from
+/// [PostCache.getList] with key `type.cacheKey`; this provider only drives the
+/// initial loading/error state and keeps the SSOT fresh.
+///
+/// Copied from [FeedLoader].
+class FeedLoaderProvider
+    extends AutoDisposeAsyncNotifierProviderImpl<FeedLoader, List<Post>> {
+  /// Loads the first page of a feed stream into the post cache.
+  ///
+  /// One instance per [FeedType] (plaza / following / nearby). UI renders from
+  /// [PostCache.getList] with key `type.cacheKey`; this provider only drives the
+  /// initial loading/error state and keeps the SSOT fresh.
+  ///
+  /// Copied from [FeedLoader].
+  FeedLoaderProvider(FeedType type)
+    : this._internal(
+        () => FeedLoader()..type = type,
+        from: feedLoaderProvider,
+        name: r'feedLoaderProvider',
+        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+            ? null
+            : _$feedLoaderHash,
+        dependencies: FeedLoaderFamily._dependencies,
+        allTransitiveDependencies: FeedLoaderFamily._allTransitiveDependencies,
+        type: type,
+      );
+
+  FeedLoaderProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.type,
+  }) : super.internal();
+
+  final FeedType type;
+
+  @override
+  FutureOr<List<Post>> runNotifierBuild(covariant FeedLoader notifier) {
+    return notifier.build(type);
+  }
+
+  @override
+  Override overrideWith(FeedLoader Function() create) {
+    return ProviderOverride(
+      origin: this,
+      override: FeedLoaderProvider._internal(
+        () => create()..type = type,
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        type: type,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeAsyncNotifierProviderElement<FeedLoader, List<Post>>
+  createElement() {
+    return _FeedLoaderProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is FeedLoaderProvider && other.type == type;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, type.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+mixin FeedLoaderRef on AutoDisposeAsyncNotifierProviderRef<List<Post>> {
+  /// The parameter `type` of this provider.
+  FeedType get type;
+}
+
+class _FeedLoaderProviderElement
+    extends AutoDisposeAsyncNotifierProviderElement<FeedLoader, List<Post>>
+    with FeedLoaderRef {
+  _FeedLoaderProviderElement(super.provider);
+
+  @override
+  FeedType get type => (origin as FeedLoaderProvider).type;
+}
+
+String _$postDetailHash() => r'fb832e9a598d50bf120f43a15ae215e8a1d123ea';
 
 abstract class _$PostDetail extends BuildlessAutoDisposeAsyncNotifier<Post> {
   late final int postId;

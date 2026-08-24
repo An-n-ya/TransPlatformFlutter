@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/cache/post_cache.dart';
+import '../../domain/models/feed_type.dart';
 import '../../providers/feed_pagination_provider.dart';
 import '../../providers/post_providers.dart';
 import 'post_card.dart';
 
-/// Feed page — loads the feed via [feedLoaderProvider] and renders posts
-/// from the SSOT post cache.
+/// Feed page for a [FeedType] — loads the feed via [feedLoaderProvider] and
+/// renders posts from the SSOT post cache.
 ///
 /// States:
 /// - Loading → [CircularProgressIndicator]
@@ -15,22 +16,24 @@ import 'post_card.dart';
 /// - Error  → message + retry button
 /// - Data   → [PostFeed]
 class Posts extends ConsumerWidget {
-  const Posts({super.key});
+  final FeedType type;
+
+  const Posts({super.key, this.type = FeedType.plaza});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final feedAsync = ref.watch(feedLoaderProvider);
+    final feedAsync = ref.watch(feedLoaderProvider(type));
     return feedAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, _) => _ErrorView(
         message: _formatError(error),
-        onRetry: () => ref.invalidate(feedLoaderProvider),
+        onRetry: () => ref.invalidate(feedLoaderProvider(type)),
       ),
       data: (_) {
-        final posts = ref.watch(postCacheProvider).getList('feed');
+        final posts = ref.watch(postCacheProvider).getList(type.cacheKey);
         return posts.isEmpty
             ? const Center(child: Text('暂无内容'))
-            : const _FeedListView();
+            : _FeedListView(type: type);
       },
     );
   }
@@ -45,7 +48,9 @@ class Posts extends ConsumerWidget {
 /// Renders the loaded feed with cursor-based infinite scroll: when the user
 /// scrolls near the bottom, [feedPaginationProvider] appends the next page.
 class _FeedListView extends ConsumerStatefulWidget {
-  const _FeedListView();
+  final FeedType type;
+
+  const _FeedListView({required this.type});
 
   @override
   ConsumerState<_FeedListView> createState() => _FeedListViewState();
@@ -66,7 +71,7 @@ class _FeedListViewState extends ConsumerState<_FeedListView> {
   void _onScroll() {
     if (!_scrollController.hasClients) return;
     if (_scrollController.position.extentAfter < 200) {
-      ref.read(feedPaginationProvider.notifier).loadMore();
+      ref.read(feedPaginationProvider(widget.type).notifier).loadMore();
     }
   }
 
@@ -78,11 +83,12 @@ class _FeedListViewState extends ConsumerState<_FeedListView> {
 
   @override
   Widget build(BuildContext context) {
-    final pagination = ref.watch(feedPaginationProvider);
-    final posts = ref.watch(postCacheProvider).getList('feed');
+    final pagination = ref.watch(feedPaginationProvider(widget.type));
+    final posts = ref.watch(postCacheProvider).getList(widget.type.cacheKey);
     return PostFeed(
       posts: posts,
-      onRefresh: () => ref.read(feedLoaderProvider.notifier).refresh(),
+      onRefresh: () =>
+          ref.read(feedLoaderProvider(widget.type).notifier).refresh(),
       scrollController: _scrollController,
       footer: _buildFooter(pagination),
     );
@@ -107,7 +113,8 @@ class _FeedListViewState extends ConsumerState<_FeedListView> {
         child: Center(
           child: TextButton.icon(
             onPressed: () =>
-                ref.read(feedPaginationProvider.notifier).loadMore(),
+                ref.read(feedPaginationProvider(widget.type).notifier)
+                    .loadMore(),
             icon: const Icon(Icons.refresh, size: 18),
             label: const Text('加载失败，点击重试'),
           ),

@@ -1,4 +1,5 @@
 import '../../../domain/models/comment.dart';
+import '../../../domain/models/feed_type.dart';
 import '../../../domain/models/post.dart';
 import '../../../utils/result.dart';
 import '../../services/api/page_result.dart';
@@ -9,11 +10,15 @@ import '../../services/api/page_result.dart';
 /// - [PostRepositoryLocal] — hardcoded sample data for UI development
 /// - [PostRepositoryRemote] — calls the backend API
 abstract class PostRepository {
-  /// Get the homepage feed (cursor-paginated).
+  /// Get the homepage feed for a given [type] (cursor-paginated).
   ///
   /// Omit [cursor] for the first page; pass back [CursorPage.nextCursor]
   /// for subsequent pages.
-  Future<Result<CursorPage<Post>>> getFeed({int? cursor, int size = 20});
+  Future<Result<CursorPage<Post>>> getFeed({
+    FeedType type = FeedType.plaza,
+    int? cursor,
+    int size = 20,
+  });
 
   /// Get a single post by ID.
   Future<Result<Post>> getPost(int postId);

@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/cache/post_cache.dart';
 import '../data/services/api/page_result.dart';
+import '../domain/models/feed_type.dart';
 import '../domain/models/post.dart';
 import '../utils/result.dart';
 import 'repository_providers.dart';
@@ -26,13 +27,13 @@ class FeedPaginationState {
   });
 }
 
-/// Drives infinite scroll on the homepage feed.
+/// Drives infinite scroll on a homepage feed stream.
 ///
 /// [FeedLoader] fetches the first page and calls [reset] with the returned
 /// cursor; this notifier appends subsequent pages via [loadMore].
-class FeedPagination extends Notifier<FeedPaginationState> {
+class FeedPagination extends FamilyNotifier<FeedPaginationState, FeedType> {
   @override
-  FeedPaginationState build() => const FeedPaginationState();
+  FeedPaginationState build(FeedType type) => const FeedPaginationState();
 
   /// Reset after the first page is (re)loaded, so subsequent [loadMore]s
   /// continue from the fresh cursor.
@@ -56,11 +57,13 @@ class FeedPagination extends Notifier<FeedPaginationState> {
 
     final result = await ref
         .read(postRepositoryProvider)
-        .getFeed(cursor: current.cursor);
+        .getFeed(type: arg, cursor: current.cursor);
 
     switch (result) {
       case Ok<CursorPage<Post>>(:final value):
-        ref.read(postCacheProvider.notifier).appendAll('feed', value.content);
+        ref
+            .read(postCacheProvider.notifier)
+            .appendAll(arg.cacheKey, value.content);
         state = FeedPaginationState(
           cursor: value.nextCursor,
           hasMore: value.hasMore,
@@ -75,7 +78,10 @@ class FeedPagination extends Notifier<FeedPaginationState> {
   }
 }
 
-/// Feed pagination state. Plain (non-generated) provider → keepAlive by
-/// default so an in-flight [FeedPagination.loadMore] is never disposed.
+/// Feed pagination state, one instance per [FeedType]. Plain (non-generated)
+/// provider → keepAlive by default so an in-flight
+/// [FeedPagination.loadMore] is never disposed.
 final feedPaginationProvider =
-    NotifierProvider<FeedPagination, FeedPaginationState>(FeedPagination.new);
+    NotifierProvider.family<FeedPagination, FeedPaginationState, FeedType>(
+      FeedPagination.new,
+    );

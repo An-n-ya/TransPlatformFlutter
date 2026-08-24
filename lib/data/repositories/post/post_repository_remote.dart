@@ -1,5 +1,6 @@
 
 import '../../../domain/models/comment.dart';
+import '../../../domain/models/feed_type.dart';
 import '../../../domain/models/post.dart';
 import '../../../utils/result.dart';
 import '../../services/api/api_client.dart';
@@ -15,12 +16,17 @@ class PostRepositoryRemote implements PostRepository {
   PostRepositoryRemote({required ApiClient apiClient}) : _api = apiClient;
 
   @override
-  Future<Result<CursorPage<Post>>> getFeed({int? cursor, int size = 20}) async {
+  Future<Result<CursorPage<Post>>> getFeed({
+    FeedType type = FeedType.plaza,
+    int? cursor,
+    int size = 20,
+  }) async {
     // Cursor-based pagination: omit `cursor` for the first page, then echo
     // back the previous page's `nextCursor` (last post id of the page).
     return _api.get<CursorPage<Post>>(
       '/api/v1/feed',
       queryParams: {
+        'type': type.name,
         if (cursor != null) 'cursor': cursor.toString(),
         'size': size.toString(),
       },

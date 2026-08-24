@@ -4,6 +4,7 @@ import '../data/cache/comment_cache.dart';
 import '../data/cache/post_cache.dart';
 import '../data/services/api/page_result.dart';
 import '../domain/models/comment.dart';
+import '../domain/models/feed_type.dart';
 import '../domain/models/post.dart';
 import '../utils/result.dart';
 import 'feed_pagination_provider.dart';
@@ -11,20 +12,23 @@ import 'repository_providers.dart';
 
 part 'post_providers.g.dart';
 
-/// Loads the homepage feed into the post cache.
+/// Loads the first page of a feed stream into the post cache.
 ///
-/// UI renders from [PostCache.getList] with key 'feed'; this provider only
-/// drives the initial loading/error state and keeps the SSOT fresh.
+/// One instance per [FeedType] (plaza / following / nearby). UI renders from
+/// [PostCache.getList] with key `type.cacheKey`; this provider only drives the
+/// initial loading/error state and keeps the SSOT fresh.
 @riverpod
 class FeedLoader extends _$FeedLoader {
   @override
-  Future<List<Post>> build() async {
-    final result = await ref.read(postRepositoryProvider).getFeed();
+  Future<List<Post>> build(FeedType type) async {
+    final result = await ref.read(postRepositoryProvider).getFeed(type: type);
     switch (result) {
       case Ok<CursorPage<Post>>(:final value):
-        ref.read(postCacheProvider.notifier).upsertAll('feed', value.content);
         ref
-            .read(feedPaginationProvider.notifier)
+            .read(postCacheProvider.notifier)
+            .upsertAll(type.cacheKey, value.content);
+        ref
+            .read(feedPaginationProvider(type).notifier)
             .reset(cursor: value.nextCursor, hasMore: value.hasMore);
         return value.content;
       case Error<CursorPage<Post>>(:final error):
@@ -32,16 +36,18 @@ class FeedLoader extends _$FeedLoader {
     }
   }
 
-  /// Pull-to-refresh: re-fetch the feed and refresh the cache.
+  /// Pull-to-refresh: re-fetch the first page and refresh the cache.
   Future<void> refresh() async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      final result = await ref.read(postRepositoryProvider).getFeed();
+      final result = await ref.read(postRepositoryProvider).getFeed(type: type);
       switch (result) {
         case Ok<CursorPage<Post>>(:final value):
-          ref.read(postCacheProvider.notifier).upsertAll('feed', value.content);
           ref
-              .read(feedPaginationProvider.notifier)
+              .read(postCacheProvider.notifier)
+              .upsertAll(type.cacheKey, value.content);
+          ref
+              .read(feedPaginationProvider(type).notifier)
               .reset(cursor: value.nextCursor, hasMore: value.hasMore);
           return value.content;
         case Error<CursorPage<Post>>(:final error):
