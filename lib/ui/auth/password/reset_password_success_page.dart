@@ -8,8 +8,9 @@ class ResetPasswordSuccessPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: const Color(0xFFFEF7FF),
+      backgroundColor: cs.surface,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) => SingleChildScrollView(
@@ -22,7 +23,7 @@ class ResetPasswordSuccessPage extends StatelessWidget {
                   children: [
                     const StepProgressIndicator(currentStep: 3),
                     const SizedBox(height: 24),
-                    _buildHeader(),
+                    _buildHeader(context),
                     const Spacer(),
                     _buildActions(context),
                     const SizedBox(height: 48),
@@ -36,30 +37,31 @@ class ResetPasswordSuccessPage extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Column(
       children: [
         Container(
           width: 100,
           height: 100,
           decoration: BoxDecoration(
-            color: const Color(0xFFEADDFF),
+            color: cs.primaryContainer,
             borderRadius: BorderRadius.circular(24),
           ),
           alignment: Alignment.center,
-          child: const Icon(Icons.check_circle_outline, size: 52, color: Color(0xFF6750A4)),
+          child: Icon(Icons.check_circle_outline, size: 52, color: cs.primary),
         ),
         const SizedBox(height: 16),
-        const Text(
+        Text(
           '密码重置成功',
           style: TextStyle(
             fontSize: 24,
             height: 32 / 24,
-            color: Color(0xFF1C1B1F),
+            color: cs.onSurface,
           ),
         ),
         const SizedBox(height: 8),
-        const Padding(
+        Padding(
           padding: EdgeInsets.symmetric(horizontal: 16),
           child: Text(
             '您的密码已成功重置，请使用新密码登录',
@@ -68,7 +70,7 @@ class ResetPasswordSuccessPage extends StatelessWidget {
               fontSize: 14,
               height: 20 / 14,
               letterSpacing: 0.25,
-              color: Color(0xFF49454F),
+              color: cs.onSurfaceVariant,
             ),
           ),
         ),
@@ -77,6 +79,7 @@ class ResetPasswordSuccessPage extends StatelessWidget {
   }
 
   Widget _buildActions(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return SizedBox(
       height: 40,
       child: FilledButton(
@@ -84,8 +87,8 @@ class ResetPasswordSuccessPage extends StatelessWidget {
           MaterialPageRoute(builder: (_) => const LoginPage()),
         ),
         style: FilledButton.styleFrom(
-          backgroundColor: const Color(0xFF6750A4),
-          foregroundColor: Colors.white,
+          backgroundColor: cs.primary,
+          foregroundColor: cs.onPrimary,
           elevation: 1,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(100),

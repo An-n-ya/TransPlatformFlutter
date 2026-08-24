@@ -72,8 +72,8 @@ class _TopicDetailPageState extends State<TopicDetailPage> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.error_outline,
-                        size: 48, color: Colors.red),
+                    Icon(Icons.error_outline,
+                        size: 48, color: cs.error),
                     const SizedBox(height: 16),
                     Text('加载失败',
                         style: Theme.of(context).textTheme.titleMedium),

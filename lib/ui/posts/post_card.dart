@@ -144,6 +144,7 @@ class _PostCardState extends ConsumerState<PostCard> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final isPinned =
         context.watch<CurrentUserProvider>().pinnedPostId == widget.post.id;
     // Read the latest entity from the SSOT cache so interactions applied on
@@ -153,18 +154,20 @@ class _PostCardState extends ConsumerState<PostCard> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0x22CAC4D0)),
-        boxShadow: const [
+        border: Border.all(
+          color: cs.outlineVariant.withValues(alpha: 0x22 / 0xFF),
+        ),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x1A000000),
-            offset: Offset(0, 1),
+            color: cs.scrim.withValues(alpha: 0x1A / 0xFF),
+            offset: const Offset(0, 1),
             blurRadius: 3,
           ),
           BoxShadow(
-            color: Color(0x1A000000),
-            offset: Offset(0, 1),
+            color: cs.scrim.withValues(alpha: 0x1A / 0xFF),
+            offset: const Offset(0, 1),
             blurRadius: 2,
             spreadRadius: -1,
           ),
@@ -184,10 +187,10 @@ class _PostCardState extends ConsumerState<PostCard> {
                   padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
                   child: Text(
                     post.content,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       height: 22 / 14,
-                      color: Color(0xFF1D1B20),
+                      color: cs.onSurface,
                     ),
                   ),
                 ),
@@ -209,11 +212,11 @@ class _PostCardState extends ConsumerState<PostCard> {
                 ),
               // ── Card divider ──
               const SizedBox(height: 8),
-              const Divider(
+              Divider(
                 thickness: 1,
                 indent: 12,
                 endIndent: 12,
-                color: Color(0x55CAC4D0),
+                color: cs.outlineVariant.withValues(alpha: 0x55 / 0xFF),
               ),
               // ── Stats row ──
               Padding(
@@ -225,9 +228,7 @@ class _PostCardState extends ConsumerState<PostCard> {
                           ? Icons.favorite
                           : Icons.favorite_border,
                       label: '${post.likesCount}',
-                      color: (post.liked ?? false)
-                          ? Colors.red
-                          : const Color(0xFF1D1B20),
+                      color: (post.liked ?? false) ? cs.error : cs.onSurface,
                       onTap: _toggleLike,
                     ),
                     const SizedBox(width: 20),
@@ -244,7 +245,7 @@ class _PostCardState extends ConsumerState<PostCard> {
                       label: '${post.collectionsCount}',
                       color: (post.collected ?? false)
                           ? Colors.amber
-                          : const Color(0xFF1D1B20),
+                          : cs.onSurface,
                       onTap: _toggleCollect,
                     ),
                   ],
@@ -258,6 +259,7 @@ class _PostCardState extends ConsumerState<PostCard> {
   }
 
   Widget _buildHeader(BuildContext context, Post post, bool isPinned) {
+    final cs = Theme.of(context).colorScheme;
     final debugMode = context.watch<GlobalConfigProvider>().debugMode;
 
     // Inside [UserDetailPage]'s own-posts tab the author is the profile
@@ -286,10 +288,10 @@ class _PostCardState extends ConsumerState<PostCard> {
                     post.author.nickname,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF1D1B20),
+                      color: cs.onSurface,
                     ),
                   ),
                 ),
@@ -297,46 +299,46 @@ class _PostCardState extends ConsumerState<PostCard> {
                 // prefixed with its icon ──
                 Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.alarm_outlined,
                       size: 14,
-                      color: Color(0xFF49454F),
+                      color: cs.onSurfaceVariant,
                     ),
                     const SizedBox(width: 2),
                     Text(
                       formatRelativeTime(post.createdAt),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: Color(0xFF49454F),
+                        color: cs.onSurfaceVariant,
                       ),
                     ),
                     if (post.location != null &&
                         post.location!.isNotEmpty) ...[
                       const SizedBox(width: 8),
-                      const Icon(
+                      Icon(
                         Icons.location_on_outlined,
                         size: 14,
-                        color: Color(0xFF49454F),
+                        color: cs.onSurfaceVariant,
                       ),
                       const SizedBox(width: 2),
                       Text(
                         post.location!,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF49454F),
-                        ),
+                        style: TextStyle(
+                        fontSize: 12,
+                        color: cs.onSurfaceVariant,
+                      ),
                       ),
                     ],
                     if (debugMode) ...[
                       const SizedBox(width: 8),
                       Text(
                         '#${post.id}',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF49454F),
-                        ),
+                        style: TextStyle(
+                        fontSize: 12,
+                        color: cs.onSurfaceVariant,
+                      ),
                       ),
                     ],
                   ],
@@ -400,7 +402,10 @@ class _PostCardState extends ConsumerState<PostCard> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('删除', style: TextStyle(color: Colors.red)),
+            child: Text(
+              '删除',
+              style: TextStyle(color: Theme.of(ctx).colorScheme.error),
+            ),
           ),
         ],
       ),

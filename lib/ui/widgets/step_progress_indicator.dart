@@ -16,8 +16,7 @@ class StepProgressIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const primaryColor = Color(0xFF6750A4);
-    const surfaceVariant = Color(0xFFE7E0EC);
+    final cs = Theme.of(context).colorScheme;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -30,7 +29,9 @@ class StepProgressIndicator extends StatelessWidget {
           width: isCurrent ? 24 : 8,
           height: 8,
           decoration: BoxDecoration(
-            color: isCurrent || isCompleted ? primaryColor : surfaceVariant,
+            color: isCurrent || isCompleted
+                ? cs.primary
+                : cs.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(4),
           ),
         );

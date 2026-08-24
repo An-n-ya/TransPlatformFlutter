@@ -60,7 +60,6 @@ class _AppShellState extends State<AppShell> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _tabIndex,
         onDestinationSelected: _onTabSelected,
-        indicatorColor: Colors.purple,
         destinations: const [
           NavigationDestination(
             selectedIcon: Icon(Icons.star),

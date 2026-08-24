@@ -64,16 +64,16 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
     }
   }
 
-  Color _strengthColor(int strength) {
+  Color _strengthColor(int strength, ColorScheme cs) {
     switch (strength) {
       case 1:
-        return const Color(0xFFB3261E);
+        return cs.error;
       case 2:
         return const Color(0xFFFF9800);
       case 3:
         return const Color(0xFF4CAF50);
       default:
-        return const Color(0xFFE7E0EC);
+        return cs.surfaceContainerHighest;
     }
   }
 
@@ -146,8 +146,9 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: const Color(0xFFFEF7FF),
+      backgroundColor: cs.surface,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -185,29 +186,30 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
   }
 
   Widget _buildHeader() {
+    final cs = Theme.of(context).colorScheme;
     return Column(
       children: [
         Container(
           width: 80,
           height: 80,
           decoration: BoxDecoration(
-            color: const Color(0xFFEADDFF),
+            color: cs.primaryContainer,
             borderRadius: BorderRadius.circular(24),
           ),
           alignment: Alignment.center,
-          child: const Icon(Icons.lock_outline, size: 36, color: Color(0xFF6750A4)),
+          child: Icon(Icons.lock_outline, size: 36, color: cs.primary),
         ),
         const SizedBox(height: 16),
-        const Text(
+        Text(
           '设置新密码',
           style: TextStyle(
             fontSize: 24,
             height: 32 / 24,
-            color: Color(0xFF1C1B1F),
+            color: cs.onSurface,
           ),
         ),
         const SizedBox(height: 4),
-        const Padding(
+        Padding(
           padding: EdgeInsets.symmetric(horizontal: 16),
           child: Text(
             '新密码须与旧密码不同，且至少8位字符',
@@ -216,7 +218,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
               fontSize: 14,
               height: 20 / 14,
               letterSpacing: 0.25,
-              color: Color(0xFF49454F),
+              color: cs.onSurfaceVariant,
             ),
           ),
         ),
@@ -225,9 +227,10 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
   }
 
   Widget _buildForm() {
+    final cs = Theme.of(context).colorScheme;
     final strength = _calculateStrength(_passwordController.text);
     final strengthLabel = _strengthLabel(strength);
-    final strengthColor = _strengthColor(strength);
+    final strengthColor = _strengthColor(strength, cs);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -261,7 +264,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                         decoration: BoxDecoration(
                           color: isActive
                               ? strengthColor
-                              : const Color(0xFFE7E0EC),
+                              : cs.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -277,7 +280,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                   fontWeight: FontWeight.w500,
                   color: strength > 0
                       ? strengthColor
-                      : const Color(0xFF49454F),
+                      : cs.onSurfaceVariant,
                 ),
               ),
             ],
@@ -301,7 +304,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
             padding: const EdgeInsets.only(top: 4, left: 16),
             child: Text(
               _errorMessage!,
-              style: const TextStyle(fontSize: 12, color: Color(0xFFB3261E)),
+              style: TextStyle(fontSize: 12, color: cs.error),
             ),
           ),
       ],
@@ -315,10 +318,11 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
     required VoidCallback onToggleObscure,
     ValueChanged<String>? onChanged,
   }) {
-    const borderColor = Color(0xFF79747E);
+    final cs = Theme.of(context).colorScheme;
+    final borderColor = cs.outline;
     final border = OutlineInputBorder(
       borderRadius: BorderRadius.circular(4),
-      borderSide: const BorderSide(color: borderColor),
+      borderSide: BorderSide(color: borderColor),
     );
     return SizedBox(
       height: 56,
@@ -328,16 +332,16 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
         textInputAction: TextInputAction.done,
         enabled: !_isLoading,
         onChanged: onChanged,
-        style: const TextStyle(fontSize: 16, color: Color(0xFF1D1B20)),
+        style: TextStyle(fontSize: 16, color: cs.onSurface),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: const TextStyle(fontSize: 16, color: Color(0xFF49454F)),
-          prefixIcon: const Icon(Icons.lock_outline, size: 20, color: Color(0xFF49454F)),
+          hintStyle: TextStyle(fontSize: 16, color: cs.onSurfaceVariant),
+          prefixIcon: Icon(Icons.lock_outline, size: 20, color: cs.onSurfaceVariant),
           suffixIcon: IconButton(
             icon: Icon(
               obscure ? Icons.visibility_off : Icons.visibility,
               size: 20,
-              color: const Color(0xFF49454F),
+              color: cs.onSurfaceVariant,
             ),
             onPressed: onToggleObscure,
           ),
@@ -346,7 +350,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
           enabledBorder: border,
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(4),
-            borderSide: const BorderSide(color: Color(0xFF6750A4), width: 1.5),
+            borderSide: BorderSide(color: cs.primary, width: 1.5),
           ),
         ),
         onSubmitted: (_) => _handleReset(),
@@ -355,6 +359,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
   }
 
   Widget _buildActions() {
+    final cs = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -363,21 +368,21 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
           child: FilledButton(
             onPressed: _isLoading ? null : _handleReset,
             style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFF6750A4),
-              disabledBackgroundColor: const Color(0x806750A4),
-              foregroundColor: Colors.white,
+              backgroundColor: cs.primary,
+              disabledBackgroundColor: cs.primary.withValues(alpha: 0.38),
+              foregroundColor: cs.onPrimary,
               elevation: 1,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(100),
               ),
             ),
             child: _isLoading
-                ? const SizedBox(
+                ? SizedBox(
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: Colors.white,
+                      color: cs.onPrimary,
                     ),
                   )
                 : const Text(
@@ -394,9 +399,10 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                 ? null
                 : () => Navigator.of(context).pop(),
             style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFFE8DEF8),
-              disabledBackgroundColor: const Color(0x80E8DEF8),
-              foregroundColor: const Color(0xFF1D192B),
+              backgroundColor: cs.secondaryContainer,
+              disabledBackgroundColor: cs.secondaryContainer
+                  .withValues(alpha: 0.38),
+              foregroundColor: cs.onSecondaryContainer,
               elevation: 1,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(100),

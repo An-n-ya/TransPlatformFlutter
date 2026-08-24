@@ -66,8 +66,8 @@ class UserHeaderSection extends ConsumerWidget {
                 current.nickname,
                 style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w500,
-                  color: Colors.black,
-                ),
+                color: cs.onSurface,
+              ),
               ),
               const SizedBox(height: 4),
               Text(

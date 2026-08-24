@@ -3,7 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../utils/result.dart';
-import 'step_progress_indicator.dart';
+import 'auth_scaffold.dart';
+import 'auth_text_field.dart';
+import 'error_banner.dart';
+import 'primary_action_button.dart';
 
 /// A reusable page for entering a verification code sent to an email.
 ///
@@ -150,225 +153,121 @@ class _CodeVerificationPageState extends State<CodeVerificationPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFFEF7FF),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: _isLoading
-              ? null
-              : () {
-                  _countdownTimer?.cancel();
-                  Navigator.of(context).pop();
-                },
-        ),
-      ),
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) => SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              child: IntrinsicHeight(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    StepProgressIndicator(currentStep: widget.stepIndex),
-                    const SizedBox(height: 24),
-                    _buildHeader(),
-                    const Spacer(),
-                    _buildForm(),
-                    const Spacer(),
-                    _buildActions(),
-                    const SizedBox(height: 48),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
+    return AuthScaffold(
+      currentStep: widget.stepIndex,
+      backEnabled: !_isLoading,
+      onBack: _isLoading
+          ? null
+          : () {
+              _countdownTimer?.cancel();
+              Navigator.of(context).pop();
+            },
+      header: _buildHeader(),
+      actions: _buildActions(),
+      children: _buildFields(),
     );
   }
 
   Widget _buildHeader() {
+    final cs = Theme.of(context).colorScheme;
     return Column(
       children: [
         Container(
           width: 80,
           height: 80,
           decoration: BoxDecoration(
-            color: const Color(0xFFEADDFF),
+            color: cs.primaryContainer,
             borderRadius: BorderRadius.circular(24),
           ),
           alignment: Alignment.center,
-          child: Icon(widget.icon, size: 36, color: const Color(0xFF6750A4)),
+          child: Icon(widget.icon, size: 36, color: cs.primary),
         ),
         const SizedBox(height: 16),
         Text(
           widget.title,
-          style: const TextStyle(
-            fontSize: 24,
-            height: 32 / 24,
-            color: Color(0xFF1C1B1F),
-          ),
+          style: TextStyle(fontSize: 24, height: 32 / 24, color: cs.onSurface),
         ),
         const SizedBox(height: 4),
         Text(
           widget.subtitle,
           textAlign: TextAlign.center,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             height: 20 / 14,
             letterSpacing: 0.25,
-            color: Color(0xFF49454F),
+            color: cs.onSurfaceVariant,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildForm() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _buildCodeField(),
-        if (_errorMessage != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 4, left: 16),
-            child: Text(
-              _errorMessage!,
-              style: const TextStyle(fontSize: 12, color: Color(0xFFB3261E)),
-            ),
-          ),
-        const SizedBox(height: 12),
-        Align(
-          alignment: Alignment.centerRight,
-          child: TextButton(
-            onPressed: _canResend && !_isLoading ? _handleResend : null,
-            style: TextButton.styleFrom(
-              foregroundColor: const Color(0xFF6750A4),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-            child: Text(
-              _canResend ? '重新发送验证码' : '重新发送 (${_resendCountdown}s)',
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCodeField() {
-    final hasError = _errorMessage != null;
-    final borderColor =
-        hasError ? const Color(0xFFB3261E) : const Color(0xFF79747E);
-    final border = OutlineInputBorder(
-      borderRadius: BorderRadius.circular(4),
-      borderSide: BorderSide(color: borderColor),
-    );
-    return SizedBox(
-      height: 56,
-      child: TextField(
+  List<Widget> _buildFields() {
+    final cs = Theme.of(context).colorScheme;
+    return [
+      AuthTextField(
         controller: _codeController,
+        hint: '6位验证码',
+        icon: Icons.lock_outline,
         keyboardType: TextInputType.number,
         textInputAction: TextInputAction.done,
         maxLength: 6,
+        hideCounter: true,
         enabled: !_isLoading,
+        hasError: _errorMessage != null,
         onChanged: (_) {
           if (_errorMessage != null) {
             setState(() => _errorMessage = null);
           }
         },
-        style: const TextStyle(fontSize: 16, color: Color(0xFF1D1B20)),
-        decoration: InputDecoration(
-          hintText: '6位验证码',
-          hintStyle: const TextStyle(fontSize: 16, color: Color(0xFF49454F)),
-          prefixIcon: const Icon(Icons.lock_outline,
-              size: 20, color: Color(0xFF49454F)),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 11),
-          border: border,
-          enabledBorder: border,
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(4),
-            borderSide: BorderSide(
-              color: hasError
-                  ? const Color(0xFFB3261E)
-                  : const Color(0xFF6750A4),
-              width: 1.5,
-            ),
-          ),
-          counterText: '',
-        ),
         onSubmitted: (_) => _handleNext(),
       ),
-    );
+      if (_errorMessage != null)
+        ErrorBanner(
+          _errorMessage!,
+          padding: const EdgeInsets.only(top: 4, left: 16),
+        ),
+      const SizedBox(height: 12),
+      Align(
+        alignment: Alignment.centerRight,
+        child: TextButton(
+          onPressed: _canResend && !_isLoading ? _handleResend : null,
+          style: TextButton.styleFrom(
+            foregroundColor: cs.primary,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+          child: Text(
+            _canResend ? '重新发送验证码' : '重新发送 (${_resendCountdown}s)',
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+          ),
+        ),
+      ),
+    ];
   }
 
-  Widget _buildActions() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        SizedBox(
-          height: 40,
-          child: FilledButton(
-            onPressed: _isLoading ? null : _handleNext,
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFF6750A4),
-              disabledBackgroundColor: const Color(0x806750A4),
-              foregroundColor: Colors.white,
-              elevation: 1,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(100),
-              ),
-            ),
-            child: _isLoading
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
-                : const Text(
-                    '下一步',
-                    style:
-                        TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-                  ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        SizedBox(
-          height: 40,
-          child: FilledButton(
-            onPressed: _isLoading
-                ? null
-                : () {
-                    _countdownTimer?.cancel();
-                    Navigator.of(context).pop();
-                  },
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFFE8DEF8),
-              disabledBackgroundColor: const Color(0x80E8DEF8),
-              foregroundColor: const Color(0xFF1D192B),
-              elevation: 1,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(100),
-              ),
-            ),
-            child: const Text(
-              '返回',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-            ),
-          ),
-        ),
-      ],
-    );
+  List<Widget> _buildActions() {
+    final cs = Theme.of(context).colorScheme;
+    return [
+      PrimaryActionButton(
+        label: '下一步',
+        loading: _isLoading,
+        onPressed: _handleNext,
+      ),
+      const SizedBox(height: 12),
+      PrimaryActionButton(
+        label: '返回',
+        onPressed: _isLoading
+            ? null
+            : () {
+                _countdownTimer?.cancel();
+                Navigator.of(context).pop();
+              },
+        backgroundColor: cs.secondaryContainer,
+        disabledBackgroundColor: cs.secondaryContainer.withValues(alpha: 0.38),
+        foregroundColor: cs.onSecondaryContainer,
+      ),
+    ];
   }
 }

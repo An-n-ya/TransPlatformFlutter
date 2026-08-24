@@ -357,7 +357,7 @@ class _ReplyDetailItemState extends ConsumerState<_ReplyDetailItem> {
                     PostActionBtn(
                       icon: liked ? Icons.favorite : Icons.favorite_border,
                       label: '${comment.likesCount}',
-                      color: liked ? Colors.red : null,
+                      color: liked ? cs.error : null,
                       onPressed: _toggleLike,
                     ),
                     const SizedBox(width: 12),

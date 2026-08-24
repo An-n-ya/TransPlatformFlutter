@@ -91,17 +91,22 @@ class _CommentTileState extends ConsumerState<_CommentTile> {
                     if (value == 'delete') widget.onDelete?.call();
                   },
                   itemBuilder: (_) => [
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'delete',
                       child: Row(
                         children: [
                           Icon(
                             Icons.delete_outline,
                             size: 20,
-                            color: Colors.red,
+                            color: Theme.of(context).colorScheme.error,
                           ),
-                          SizedBox(width: 8),
-                          Text('删除', style: TextStyle(color: Colors.red)),
+                          const SizedBox(width: 8),
+                          Text(
+                            '删除',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -122,7 +127,9 @@ class _CommentTileState extends ConsumerState<_CommentTile> {
               PostActionBtn(
                 icon: liked ? Icons.favorite : Icons.favorite_border,
                 label: '${comment.likesCount}',
-                color: liked ? Colors.red : null,
+                color: liked
+                    ? Theme.of(context).colorScheme.error
+                    : null,
                 onPressed: _toggleLike,
               ),
               const SizedBox(width: 12),

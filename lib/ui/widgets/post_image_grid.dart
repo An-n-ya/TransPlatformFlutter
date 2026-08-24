@@ -16,6 +16,7 @@ class PostImageGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (images.isEmpty) return const SizedBox.shrink();
+    final cs = Theme.of(context).colorScheme;
     final crossAxisCount = images.length <= 3 ? images.length : 3;
     return GridView.builder(
       shrinkWrap: true,
@@ -34,12 +35,12 @@ class PostImageGrid extends StatelessWidget {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(borderRadius),
             child: Container(
-              color: const Color(0xFFECE6F0),
+              color: cs.surfaceContainerHighest,
               child: Image(
                 image: _providerOf(url),
                 fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => const Center(
-                  child: Icon(Icons.broken_image, color: Colors.grey),
+                errorBuilder: (_, _, _) => Center(
+                  child: Icon(Icons.broken_image, color: cs.onSurfaceVariant),
                 ),
               ),
             ),

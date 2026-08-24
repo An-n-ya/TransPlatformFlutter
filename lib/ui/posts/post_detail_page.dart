@@ -83,11 +83,9 @@ class _PostDetailPageState extends ConsumerState<PostDetailPage> {
     // Minimal placeholder for the optimistic insert; replaced by the
     // server-returned comment on success.
     final author = User(id: _currentUserId ?? 0, username: '', nickname: '我');
-    final ok = await ref.read(commentMutationProvider.notifier).create(
-      postId: postId,
-      content: content,
-      author: author,
-    );
+    final ok = await ref
+        .read(commentMutationProvider.notifier)
+        .create(postId: postId, content: content, author: author);
 
     if (!mounted) return;
     setState(() => _isSending = false);
@@ -109,7 +107,10 @@ class _PostDetailPageState extends ConsumerState<PostDetailPage> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('删除', style: TextStyle(color: Colors.red)),
+            child: Text(
+              '删除',
+              style: TextStyle(color: Theme.of(ctx).colorScheme.error),
+            ),
           ),
         ],
       ),
@@ -169,14 +170,19 @@ class _PostDetailPageState extends ConsumerState<PostDetailPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.error_outline, size: 48, color: Colors.red),
+              Icon(
+                Icons.error_outline,
+                size: 48,
+                color: Theme.of(context).colorScheme.error,
+              ),
               const SizedBox(height: 16),
-              Text('加载失败',
-                  style: Theme.of(context).textTheme.titleMedium),
+              Text('加载失败', style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 8),
-              Text(_formatError(asyncDetail.error!),
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodySmall),
+              Text(
+                _formatError(asyncDetail.error!),
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
               const SizedBox(height: 16),
               FilledButton.tonal(
                 onPressed: () => ref.invalidate(postDetailProvider(postId)),
@@ -219,9 +225,12 @@ class _PostDetailPageState extends ConsumerState<PostDetailPage> {
                     ),
                   ),
                   // ── Section divider ──
-                  const Padding(
-                    padding: EdgeInsets.fromLTRB(20, 12, 20, 0),
-                    child: Divider(height: 1, color: Color(0xFFCAC4D0)),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                    child: Divider(
+                      height: 1,
+                      color: Theme.of(context).colorScheme.outlineVariant,
+                    ),
                   ),
                   _buildCommentsSection(postId),
                 ],
@@ -254,8 +263,7 @@ class _PostDetailPageState extends ConsumerState<PostDetailPage> {
         child: Text('加载评论失败: $error'),
       ),
       data: (_) {
-        final comments =
-            ref.watch(commentCacheProvider).getByPost(postId);
+        final comments = ref.watch(commentCacheProvider).getByPost(postId);
         return comments.isEmpty
             ? const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 12, vertical: 24),

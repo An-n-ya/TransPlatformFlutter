@@ -351,7 +351,7 @@ class _SearchPageState extends State<SearchPage> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.error_outline, size: 48, color: Colors.red),
+          Icon(Icons.error_outline, size: 48, color: cs.error),
           const SizedBox(height: 16),
           Text('搜索失败，请稍后重试', style: TextStyle(color: cs.onSurfaceVariant)),
           const SizedBox(height: 16),
@@ -387,18 +387,21 @@ class _SectionHeader extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w500,
               letterSpacing: 0.96,
-              color: Color(0xFF49454F),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           if (count != null) ...[
             const SizedBox(width: 8),
             Text(
               count!,
-              style: const TextStyle(fontSize: 12, color: Color(0xFF79747E)),
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.outline,
+              ),
             ),
           ],
         ],
@@ -438,10 +441,10 @@ class _RecentRow extends StatelessWidget {
                 keyword,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: Color(0xFF1D1B20),
+                  color: cs.onSurface,
                 ),
               ),
             ),
@@ -480,8 +483,8 @@ class _UserRow extends StatelessWidget {
               width: 40,
               height: 40,
               clipBehavior: Clip.antiAlias,
-              decoration: const BoxDecoration(
-                color: Color(0xFFEADDFF),
+              decoration: BoxDecoration(
+                color: cs.primaryContainer,
                 shape: BoxShape.circle,
               ),
               child: image != null
@@ -510,10 +513,10 @@ class _UserRow extends StatelessWidget {
                         user.nickname,
                         keyword,
                         cs.primary,
-                        const TextStyle(
+                        TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
-                          color: Colors.black,
+                          color: cs.onSurface,
                         ),
                       ),
                     ),
@@ -527,10 +530,10 @@ class _UserRow extends StatelessWidget {
                         : 'ID: ${user.id}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
-                      color: Color(0xFF49454F),
+                      color: cs.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -563,8 +566,8 @@ class _TopicRow extends StatelessWidget {
             Container(
               width: 40,
               height: 40,
-              decoration: const BoxDecoration(
-                color: Color(0xFFE8DEF8),
+              decoration: BoxDecoration(
+                color: cs.secondaryContainer,
                 shape: BoxShape.circle,
               ),
               child: Icon(Icons.tag, size: 18, color: cs.primary),
@@ -580,10 +583,10 @@ class _TopicRow extends StatelessWidget {
                         topic.name,
                         keyword,
                         cs.primary,
-                        const TextStyle(
+                        TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
-                          color: Colors.black,
+                          color: cs.onSurface,
                         ),
                       ),
                     ),
@@ -593,10 +596,10 @@ class _TopicRow extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     '${topic.participantsCount} 人参与',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
-                      color: Color(0xFF49454F),
+                      color: cs.onSurfaceVariant,
                     ),
                   ),
                 ],

@@ -8,6 +8,7 @@ import '../../domain/models/user.dart';
 import '../../utils/result.dart';
 import '../auth/login_page.dart';
 import 'about_page.dart';
+import 'appearance_page.dart';
 import 'profile_page.dart';
 
 /// Settings page, WeChat-style.
@@ -38,6 +39,18 @@ class SettingsPage extends StatelessWidget {
             onTap: () => Navigator.of(
               context,
             ).push(MaterialPageRoute(builder: (_) => const AboutPage())),
+          ),
+
+          const Divider(height: 1),
+
+          // ── Appearance ──
+          ListTile(
+            leading: const Icon(Icons.dark_mode_outlined),
+            title: const Text('深色模式'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const AppearancePage()),
+            ),
           ),
 
           const Divider(height: 1),

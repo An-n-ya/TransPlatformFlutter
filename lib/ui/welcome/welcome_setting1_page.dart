@@ -76,8 +76,9 @@ class _WelcomeSetting1PageState extends State<WelcomeSetting1Page> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: const Color(0xFFFEF7FF),
+      backgroundColor: cs.surface,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) => SingleChildScrollView(
@@ -99,9 +100,9 @@ class _WelcomeSetting1PageState extends State<WelcomeSetting1Page> {
                         child: Text(
                           _errorMessage!,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
-                            color: Color(0xFFB3261E),
+                            color: cs.error,
                           ),
                         ),
                       ),
@@ -118,22 +119,23 @@ class _WelcomeSetting1PageState extends State<WelcomeSetting1Page> {
   }
 
   Widget _buildTopBar() {
+    final cs = Theme.of(context).colorScheme;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         // Step indicator: 1/2
-        const Row(
+        Row(
           children: [
-            _StepBar(active: true),
-            SizedBox(width: 8),
-            _StepBar(active: false),
-            SizedBox(width: 8),
+            const _StepBar(active: true),
+            const SizedBox(width: 8),
+            const _StepBar(active: false),
+            const SizedBox(width: 8),
             Text(
               '1 / 2',
               style: TextStyle(
                 fontSize: 12,
                 letterSpacing: 0.4,
-                color: Color(0xFF49454F),
+                color: cs.onSurfaceVariant,
               ),
             ),
           ],
@@ -141,7 +143,7 @@ class _WelcomeSetting1PageState extends State<WelcomeSetting1Page> {
         TextButton(
           onPressed: _isSaving ? null : _skip,
           style: TextButton.styleFrom(
-            foregroundColor: const Color(0xFF49454F),
+            foregroundColor: cs.onSurfaceVariant,
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             minimumSize: Size.zero,
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -156,6 +158,7 @@ class _WelcomeSetting1PageState extends State<WelcomeSetting1Page> {
   }
 
   Widget _buildContent() {
+    final cs = Theme.of(context).colorScheme;
     return Column(
       children: [
         // Logo in a primary-container rounded box
@@ -163,7 +166,7 @@ class _WelcomeSetting1PageState extends State<WelcomeSetting1Page> {
           width: 120,
           height: 120,
           decoration: BoxDecoration(
-            color: const Color(0xFFEADDFF),
+            color: cs.primaryContainer,
             borderRadius: BorderRadius.circular(36),
           ),
           alignment: Alignment.center,
@@ -175,19 +178,19 @@ class _WelcomeSetting1PageState extends State<WelcomeSetting1Page> {
           ),
         ),
         const SizedBox(height: 24),
-        const Text(
+        Text(
           '您想被怎么称呼?',
-          style: TextStyle(fontSize: 28, height: 36 / 28, color: Color(0xFF1C1B1F)),
+          style: TextStyle(fontSize: 28, height: 36 / 28, color: cs.onSurface),
         ),
         const SizedBox(height: 8),
-        const Text(
+        Text(
           '设置一个昵称，让其他用户认识您。昵称可以随时修改。',
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 14,
             height: 20 / 14,
             letterSpacing: 0.25,
-            color: Color(0xFF49454F),
+            color: cs.onSurfaceVariant,
           ),
         ),
         const SizedBox(height: 40),
@@ -198,15 +201,15 @@ class _WelcomeSetting1PageState extends State<WelcomeSetting1Page> {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
                   '支持中文、英文、数字及常用符号',
-                  style: TextStyle(fontSize: 12, color: Color(0xFF49454F)),
+                  style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
                 ),
               ),
               Text(
                 '${_nicknameController.text.length} / 20',
-                style: const TextStyle(fontSize: 12, color: Color(0xFF49454F)),
+                style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
               ),
             ],
           ),
@@ -216,10 +219,11 @@ class _WelcomeSetting1PageState extends State<WelcomeSetting1Page> {
   }
 
   Widget _buildNicknameField() {
-    const borderColor = Color(0xFF79747E);
+    final cs = Theme.of(context).colorScheme;
+    final borderColor = cs.outline;
     final border = OutlineInputBorder(
       borderRadius: BorderRadius.circular(4),
-      borderSide: const BorderSide(color: borderColor),
+      borderSide: BorderSide(color: borderColor),
     );
     return SizedBox(
       height: 56,
@@ -227,14 +231,14 @@ class _WelcomeSetting1PageState extends State<WelcomeSetting1Page> {
         controller: _nicknameController,
         maxLength: 20,
         enabled: !_isSaving,
-        style: const TextStyle(fontSize: 16, color: Color(0xFF1D1B20)),
+        style: TextStyle(fontSize: 16, color: cs.onSurface),
         decoration: InputDecoration(
           hintText: '您的昵称',
-          hintStyle: const TextStyle(fontSize: 16, color: Color(0xFF49454F)),
-          prefixIcon: const Icon(
+          hintStyle: TextStyle(fontSize: 16, color: cs.onSurfaceVariant),
+          prefixIcon: Icon(
             Icons.face_outlined,
             size: 20,
-            color: Color(0xFF49454F),
+            color: cs.onSurfaceVariant,
           ),
           counterText: '',
           contentPadding: const EdgeInsets.symmetric(horizontal: 11),
@@ -242,7 +246,7 @@ class _WelcomeSetting1PageState extends State<WelcomeSetting1Page> {
           enabledBorder: border,
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(4),
-            borderSide: const BorderSide(color: Color(0xFF6750A4), width: 1.5),
+            borderSide: BorderSide(color: cs.primary, width: 1.5),
           ),
         ),
       ),
@@ -250,27 +254,28 @@ class _WelcomeSetting1PageState extends State<WelcomeSetting1Page> {
   }
 
   Widget _buildNextButton() {
+    final cs = Theme.of(context).colorScheme;
     return SizedBox(
       height: 40,
       child: FilledButton(
         onPressed: _canProceed && !_isSaving ? _next : null,
         style: FilledButton.styleFrom(
-          backgroundColor: const Color(0xFF6750A4),
-          disabledBackgroundColor: const Color(0x1F1C1B1F),
-          foregroundColor: Colors.white,
-          disabledForegroundColor: const Color(0x611C1B1F),
+          backgroundColor: cs.primary,
+          disabledBackgroundColor: cs.onSurface.withValues(alpha: 0.12),
+          foregroundColor: cs.onPrimary,
+          disabledForegroundColor: cs.onSurface.withValues(alpha: 0.38),
           elevation: 1,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(100),
           ),
         ),
         child: _isSaving
-            ? const SizedBox(
+            ? SizedBox(
                 width: 20,
                 height: 20,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: Colors.white,
+                  color: cs.onPrimary,
                 ),
               )
             : const Text(
@@ -290,11 +295,12 @@ class _StepBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       width: active ? 24 : 16,
       height: 4,
       decoration: BoxDecoration(
-        color: active ? const Color(0xFF6750A4) : const Color(0xFFCAC4D0),
+        color: active ? cs.primary : cs.outlineVariant,
         borderRadius: BorderRadius.circular(100),
       ),
     );

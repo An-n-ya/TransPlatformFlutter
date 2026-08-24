@@ -10,8 +10,9 @@ class WelcomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: const Color(0xFFFEF7FF),
+      backgroundColor: cs.surface,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -28,8 +29,8 @@ class WelcomePage extends StatelessWidget {
                   child: Container(
                     width: 120,
                     height: 120,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFEADDFF),
+                    decoration: BoxDecoration(
+                      color: cs.primaryContainer,
                       shape: BoxShape.circle,
                     ),
                     alignment: Alignment.center,
@@ -42,18 +43,18 @@ class WelcomePage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 32),
-                const Center(
+                Center(
                   child: Text(
                     '欢迎加入!',
                     style: TextStyle(
                       fontSize: 36,
                       height: 44 / 36,
-                      color: Color(0xFF1C1B1F),
+                      color: cs.onSurface,
                     ),
                   ),
                 ),
                 const SizedBox(height: 12),
-                const Center(
+                Center(
                   child: Text(
                     '您的账号已设置完成。\n开始探索属于您的空间吧。',
                     textAlign: TextAlign.center,
@@ -61,7 +62,7 @@ class WelcomePage extends StatelessWidget {
                       fontSize: 16,
                       height: 24 / 16,
                       letterSpacing: 0.15,
-                      color: Color(0xFF49454F),
+                      color: cs.onSurfaceVariant,
                     ),
                   ),
                 ),
@@ -92,8 +93,8 @@ class WelcomePage extends StatelessWidget {
                       MaterialPageRoute(builder: (_) => const AppShell()),
                     ),
                     style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFF6750A4),
-                      foregroundColor: Colors.white,
+                      backgroundColor: cs.primary,
+                      foregroundColor: cs.onPrimary,
                       elevation: 1,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(100),
@@ -132,21 +133,22 @@ class _FeatureRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFFE7E0EC),
+        color: cs.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         children: [
           Text(
             symbol,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 20,
               height: 30 / 20,
               letterSpacing: -0.45,
-              color: Color(0xFF6750A4),
+              color: cs.primary,
             ),
           ),
           const SizedBox(width: 16),
@@ -156,19 +158,19 @@ class _FeatureRow extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: Color(0xFF1C1B1F),
+                    color: cs.onSurface,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     letterSpacing: 0.4,
-                    color: Color(0xFF49454F),
+                    color: cs.onSurfaceVariant,
                   ),
                 ),
               ],

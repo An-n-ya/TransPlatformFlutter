@@ -151,7 +151,11 @@ class _ErrorView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.error_outline, size: 48, color: Colors.red),
+            Icon(
+            Icons.error_outline,
+            size: 48,
+            color: theme.colorScheme.error,
+          ),
             const SizedBox(height: 16),
             Text('加载失败', style: theme.textTheme.titleMedium),
             const SizedBox(height: 8),

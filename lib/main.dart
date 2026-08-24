@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' hide Consumer;
 import 'package:provider/provider.dart';
 
 import 'config/dependencies.dart';
 import 'providers/snackbar_provider.dart';
+import 'theme/app_theme.dart';
+import 'theme/theme_provider.dart';
 import 'ui/auth/splash_page.dart';
 
 /// Default entry: runs in local mode (no backend needed).
@@ -33,9 +35,14 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      scaffoldMessengerKey: rootScaffoldMessengerKey,
-      home: SplashPage(),
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, _) => MaterialApp(
+        scaffoldMessengerKey: rootScaffoldMessengerKey,
+        theme: buildLightTheme(),
+        darkTheme: buildDarkTheme(),
+        themeMode: themeProvider.mode.material,
+        home: const SplashPage(),
+      ),
     );
   }
 }

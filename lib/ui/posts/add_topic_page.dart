@@ -113,9 +113,9 @@ class _AddTopicPageState extends State<AddTopicPage> {
       } else if (_selected.length < _maxTopics) {
         _selected.add(topic);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('最多选择 $_maxTopics 个话题')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('最多选择 $_maxTopics 个话题')));
       }
     });
   }
@@ -138,17 +138,17 @@ class _AddTopicPageState extends State<AddTopicPage> {
     switch (result) {
       case Ok<Topic>(:final value):
         if (_selected.length >= _maxTopics) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('最多选择 $_maxTopics 个话题')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('最多选择 $_maxTopics 个话题')));
           return;
         }
         setState(() => _selected.add(value));
         _searchController.clear();
       case Error<Topic>():
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('创建话题失败')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('创建话题失败')));
     }
   }
 
@@ -324,7 +324,11 @@ class _AddTopicPageState extends State<AddTopicPage> {
           const SizedBox(width: 6),
           Text(
             title,
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: color),
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
           ),
         ],
       ),
@@ -336,7 +340,7 @@ class _AddTopicPageState extends State<AddTopicPage> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.error_outline, size: 48, color: Colors.red),
+          Icon(Icons.error_outline, size: 48, color: cs.error),
           const SizedBox(height: 16),
           Text('加载失败，请稍后重试', style: TextStyle(color: cs.onSurfaceVariant)),
           const SizedBox(height: 16),
@@ -355,9 +359,7 @@ class _AddTopicPageState extends State<AddTopicPage> {
       padding: const EdgeInsets.fromLTRB(16, 11, 16, 8),
       decoration: BoxDecoration(
         color: cs.surface,
-        border: const Border(
-          top: BorderSide(color: Color(0xFFE8E0ED)),
-        ),
+        border: const Border(top: BorderSide(color: Color(0xFFE8E0ED))),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -375,10 +377,10 @@ class _AddTopicPageState extends State<AddTopicPage> {
               onPressed: _confirm,
               child: Text(
                 '确认添加 ${_selected.length} 个话题',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  color: Colors.white,
+                  color: cs.onPrimary,
                 ),
               ),
             ),
@@ -413,10 +415,10 @@ class _ConfirmButton extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: Colors.white,
+            color: cs.onPrimary,
           ),
         ),
       ),
@@ -446,17 +448,17 @@ class _SelectedChip extends StatelessWidget {
         children: [
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w500,
-              color: Colors.white,
+              color: cs.onPrimary,
             ),
           ),
           const SizedBox(width: 4),
           InkWell(
             onTap: onClose,
             borderRadius: BorderRadius.circular(7),
-            child: const Icon(Icons.close, size: 10, color: Colors.white),
+            child: Icon(Icons.close, size: 10, color: cs.onPrimary),
           ),
         ],
       ),
@@ -492,7 +494,7 @@ class _CreateTopicRow extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: const Color(0x1A6750A4),
+                color: cs.primary.withValues(alpha: 0x1A / 0xFF),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: creating
@@ -636,12 +638,12 @@ class _TopicCheckbox extends StatelessWidget {
         shape: BoxShape.circle,
         color: selected ? cs.primary : Colors.transparent,
         border: Border.all(
-          color: selected ? cs.primary : const Color(0xFFCAC4D0),
+          color: selected ? cs.primary : cs.outlineVariant,
           width: 2,
         ),
       ),
       child: selected
-          ? const Icon(Icons.check, size: 13, color: Colors.white)
+          ? Icon(Icons.check, size: 13, color: cs.onPrimary)
           : null,
     );
   }

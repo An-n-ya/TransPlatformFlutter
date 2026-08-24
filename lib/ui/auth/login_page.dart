@@ -8,6 +8,12 @@ import '../../domain/models/auth_response.dart';
 import '../../utils/result.dart';
 import '../home/app_shell.dart';
 import '../settings/debug/server_page.dart';
+import '../widgets/app_header_logo.dart';
+import '../widgets/auth_scaffold.dart';
+import '../widgets/auth_text_field.dart';
+import '../widgets/error_banner.dart';
+import '../widgets/labeled_divider.dart';
+import '../widgets/primary_action_button.dart';
 import 'password/forgot_password_page.dart';
 import 'register_page.dart';
 
@@ -50,9 +56,9 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     final result = await context.read<AuthRepository>().login(
-          username: username,
-          password: password,
-        );
+      username: username,
+      password: password,
+    );
 
     if (!mounted) return;
 
@@ -61,12 +67,10 @@ class _LoginPageState extends State<LoginPage> {
         {
           // Persist tokens securely
           await context.read<TokenStorageService>().saveTokens(
-                accessToken: result.value.accessToken,
-                refreshToken: result.value.refreshToken,
-              );
-          context
-              .read<CurrentUserProvider>()
-              .setUserId(result.value.user.id);
+            accessToken: result.value.accessToken,
+            refreshToken: result.value.refreshToken,
+          );
+          context.read<CurrentUserProvider>().setUserId(result.value.user.id);
           if (!mounted) return;
 
           // Navigate to main app, replacing login page
@@ -95,142 +99,85 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFFEF7FF),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
-          // Server switch entry
-          IconButton(
-            icon: const Icon(Icons.dns_outlined),
-            tooltip: '切换服务器',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const ServerPage()),
-            ),
-          ),
-        ],
+    final cs = Theme.of(context).colorScheme;
+    return AuthScaffold(
+      topGap: 48,
+      backEnabled: false,
+      appBarAction: IconButton(
+        icon: const Icon(Icons.dns_outlined),
+        tooltip: '切换服务器',
+        onPressed: () => Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const ServerPage())),
       ),
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) => SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              child: IntrinsicHeight(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const SizedBox(height: 48),
-                    _buildHeader(),
-                    const Spacer(),
-                    _buildFields(),
-                    if (_errorMessage != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 16),
-                        child: Text(
-                          _errorMessage!,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: Color(0xFFB3261E),
-                          ),
-                        ),
-                      ),
-                    const Spacer(),
-                    _buildActions(),
-                    const SizedBox(height: 48),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
+      header: const AppHeaderLogo(
+        imageAsset: 'assets/images/logoTP.png',
+        title: '欢迎回来',
+        subtitle: '登录您的账号以继续',
       ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Column(
-      children: [
-        // Logo (original asset) inside a primary-container rounded box
-        Container(
-          width: 80,
-          height: 80,
-          clipBehavior: Clip.hardEdge,
-          decoration: BoxDecoration(
-            color: const Color(0xFFEADDFF),
-            borderRadius: BorderRadius.circular(24),
-          ),
-          alignment: Alignment.center,
-          child: Image.asset(
-            'assets/images/logoTP.png',
-            width: 80,
-            height: 80,
-            fit: BoxFit.contain,
-          ),
+      actions: [
+        PrimaryActionButton(
+          label: '登录',
+          loading: _isLoading,
+          onPressed: _handleLogin,
         ),
         const SizedBox(height: 12),
-        const Text(
-          '欢迎回来',
-          style: TextStyle(
-            fontSize: 32,
-            height: 40 / 32,
-            color: Color(0xFF1C1B1F),
+        const LabeledDivider('还没有账号?'),
+        const SizedBox(height: 12),
+        PrimaryActionButton(
+          label: '申请注册',
+          onPressed: _isLoading
+              ? null
+              : () => Navigator.of(
+                  context,
+                ).push(MaterialPageRoute(builder: (_) => const RegisterPage())),
+          backgroundColor: cs.secondaryContainer,
+          disabledBackgroundColor: cs.secondaryContainer.withValues(
+            alpha: 0.38,
           ),
-        ),
-        const SizedBox(height: 4),
-        const Text(
-          '登录您的账号以继续',
-          style: TextStyle(
-            fontSize: 14,
-            height: 20 / 14,
-            letterSpacing: 0.25,
-            color: Color(0xFF49454F),
-          ),
+          foregroundColor: cs.onSecondaryContainer,
         ),
       ],
-    );
-  }
-
-  Widget _buildFields() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildField(
+        AuthTextField(
           controller: _usernameController,
           hint: '用户名',
           icon: Icons.person_outline,
           textInputAction: TextInputAction.next,
+          enabled: !_isLoading,
+          onChanged: (_) {
+            if (_errorMessage != null) {
+              setState(() => _errorMessage = null);
+            }
+          },
         ),
         const SizedBox(height: 16),
-        _buildField(
+        AuthTextField(
           controller: _passwordController,
           hint: '密码',
           icon: Icons.lock_outline,
           obscure: _obscurePassword,
           textInputAction: TextInputAction.done,
+          enabled: !_isLoading,
           onSubmitted: (_) => _handleLogin(),
           suffix: IconButton(
             icon: Icon(
               _obscurePassword ? Icons.visibility_off : Icons.visibility,
               size: 20,
-              color: const Color(0xFF49454F),
+              color: cs.onSurfaceVariant,
             ),
             onPressed: () =>
                 setState(() => _obscurePassword = !_obscurePassword),
           ),
         ),
-        // Forgot password link
         Align(
           alignment: Alignment.centerRight,
           child: TextButton(
             onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                  builder: (_) => const ForgotPasswordPage()),
+              MaterialPageRoute(builder: (_) => const ForgotPasswordPage()),
             ),
             style: TextButton.styleFrom(
-              foregroundColor: const Color(0xFF6750A4),
+              foregroundColor: cs.primary,
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               minimumSize: Size.zero,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -241,127 +188,8 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
         ),
-      ],
-    );
-  }
-
-  Widget _buildField({
-    required TextEditingController controller,
-    required String hint,
-    required IconData icon,
-    bool obscure = false,
-    TextInputAction? textInputAction,
-    ValueChanged<String>? onSubmitted,
-    Widget? suffix,
-  }) {
-    const borderColor = Color(0xFF79747E);
-    final border = OutlineInputBorder(
-      borderRadius: BorderRadius.circular(4),
-      borderSide: const BorderSide(color: borderColor),
-    );
-    return SizedBox(
-      height: 56,
-      child: TextField(
-        controller: controller,
-        obscureText: obscure,
-        textInputAction: textInputAction,
-        onSubmitted: onSubmitted,
-        enabled: !_isLoading,
-        style: const TextStyle(fontSize: 16, color: Color(0xFF1D1B20)),
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: const TextStyle(fontSize: 16, color: Color(0xFF49454F)),
-          prefixIcon: Icon(icon, size: 20, color: const Color(0xFF49454F)),
-          suffixIcon: suffix,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 11),
-          border: border,
-          enabledBorder: border,
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(4),
-            borderSide: const BorderSide(color: Color(0xFF6750A4), width: 1.5),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActions() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Login button
-        SizedBox(
-          height: 40,
-          child: FilledButton(
-            onPressed: _isLoading ? null : _handleLogin,
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFF6750A4),
-              disabledBackgroundColor: const Color(0x806750A4),
-              foregroundColor: Colors.white,
-              elevation: 1,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(100),
-              ),
-            ),
-            child: _isLoading
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
-                : const Text(
-                    '登录',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-                  ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        // Divider with hint
-        const Row(
-          children: [
-            Expanded(child: Divider(color: Color(0xFFCAC4D0), height: 1)),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 12),
-              child: Text(
-                '还没有账号?',
-                style: TextStyle(
-                  fontSize: 12,
-                  letterSpacing: 0.4,
-                  color: Color(0xFF49454F),
-                ),
-              ),
-            ),
-            Expanded(child: Divider(color: Color(0xFFCAC4D0), height: 1)),
-          ],
-        ),
-        const SizedBox(height: 12),
-        // Register button
-        SizedBox(
-          height: 40,
-          child: FilledButton(
-            onPressed: _isLoading
-                ? null
-                : () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const RegisterPage()),
-                    ),
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFFE8DEF8),
-              disabledBackgroundColor: const Color(0x80E8DEF8),
-              foregroundColor: const Color(0xFF1D192B),
-              elevation: 1,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(100),
-              ),
-            ),
-            child: const Text(
-              '申请注册',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-            ),
-          ),
-        ),
+        if (_errorMessage != null)
+          ErrorBanner(_errorMessage!, padding: const EdgeInsets.only(top: 16)),
       ],
     );
   }

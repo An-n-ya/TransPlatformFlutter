@@ -175,8 +175,9 @@ class _RegisterPageState extends State<RegisterPage> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: const Color(0xFFFEF7FF),
+      backgroundColor: cs.surface,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -205,9 +206,9 @@ class _RegisterPageState extends State<RegisterPage> {
                         child: Text(
                           _errorMessage!,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
-                            color: Color(0xFFB3261E),
+                            color: cs.error,
                           ),
                         ),
                       ),
@@ -225,6 +226,7 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   Widget _buildHeader() {
+    final cs = Theme.of(context).colorScheme;
     return Column(
       children: [
         // Logo (original asset) inside a primary-container rounded box
@@ -233,7 +235,7 @@ class _RegisterPageState extends State<RegisterPage> {
           height: 80,
           clipBehavior: Clip.hardEdge,
           decoration: BoxDecoration(
-            color: const Color(0xFFEADDFF),
+            color: cs.primaryContainer,
             borderRadius: BorderRadius.circular(24),
           ),
           alignment: Alignment.center,
@@ -245,22 +247,22 @@ class _RegisterPageState extends State<RegisterPage> {
           ),
         ),
         const SizedBox(height: 12),
-        const Text(
+        Text(
           '创建账号',
           style: TextStyle(
             fontSize: 32,
             height: 40 / 32,
-            color: Color(0xFF1C1B1F),
+            color: cs.onSurface,
           ),
         ),
         const SizedBox(height: 4),
-        const Text(
+        Text(
           '受邀用户专属注册通道',
           style: TextStyle(
             fontSize: 14,
             height: 20 / 14,
             letterSpacing: 0.25,
-            color: Color(0xFF49454F),
+            color: cs.onSurfaceVariant,
           ),
         ),
       ],
@@ -268,6 +270,7 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   Widget _buildForm() {
+    final cs = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -280,18 +283,18 @@ class _RegisterPageState extends State<RegisterPage> {
           icon: Icons.confirmation_number_outlined,
           textInputAction: TextInputAction.next,
         ),
-        const Padding(
+        Padding(
           padding: EdgeInsets.only(left: 16, top: 4),
           child: Text(
             '请输入您收到的邀请码',
-            style: TextStyle(fontSize: 12, color: Color(0xFF49454F)),
+            style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
           ),
         ),
         const SizedBox(height: 24),
         // ── Divider ──
-        const Row(
+        Row(
           children: [
-            Expanded(child: Divider(color: Color(0xFFCAC4D0), height: 1)),
+            Expanded(child: Divider(color: cs.outlineVariant, height: 1)),
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 12),
               child: Text(
@@ -299,11 +302,11 @@ class _RegisterPageState extends State<RegisterPage> {
                 style: TextStyle(
                   fontSize: 12,
                   letterSpacing: 0.4,
-                  color: Color(0xFF49454F),
+                  color: cs.onSurfaceVariant,
                 ),
               ),
             ),
-            Expanded(child: Divider(color: Color(0xFFCAC4D0), height: 1)),
+            Expanded(child: Divider(color: cs.outlineVariant, height: 1)),
           ],
         ),
         const SizedBox(height: 16),
@@ -316,14 +319,14 @@ class _RegisterPageState extends State<RegisterPage> {
           textInputAction: TextInputAction.next,
           onChanged: (_) => setState(() => _usernameError = null),
           suffix: _isCheckingUsername
-              ? const Padding(
-                  padding: EdgeInsets.all(18),
+              ? Padding(
+                  padding: const EdgeInsets.all(18),
                   child: SizedBox(
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: Color(0xFF6750A4),
+                      color: cs.primary,
                     ),
                   ),
                 )
@@ -344,18 +347,18 @@ class _RegisterPageState extends State<RegisterPage> {
             icon: Icon(
               _obscurePassword ? Icons.visibility_off : Icons.visibility,
               size: 20,
-              color: const Color(0xFF49454F),
+              color: cs.onSurfaceVariant,
             ),
             onPressed: () =>
                 setState(() => _obscurePassword = !_obscurePassword),
           ),
         ),
         _buildFieldError(_passwordError),
-        const Padding(
+        Padding(
           padding: EdgeInsets.only(left: 16, top: 4),
           child: Text(
             '使用 8 位以上字符，包含数字与字母',
-            style: TextStyle(fontSize: 12, color: Color(0xFF49454F)),
+            style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
           ),
         ),
       ],
@@ -363,12 +366,13 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   Widget _buildFieldError(String? error) {
+    final cs = Theme.of(context).colorScheme;
     if (error == null) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.only(left: 16, top: 4),
       child: Text(
         error,
-        style: const TextStyle(fontSize: 12, color: Color(0xFFB3261E)),
+        style: TextStyle(fontSize: 12, color: cs.error),
       ),
     );
   }
@@ -402,10 +406,11 @@ class _RegisterPageState extends State<RegisterPage> {
     ValueChanged<String>? onSubmitted,
     Widget? suffix,
   }) {
-    const borderColor = Color(0xFF79747E);
+    final cs = Theme.of(context).colorScheme;
+    final borderColor = cs.outline;
     final border = OutlineInputBorder(
       borderRadius: BorderRadius.circular(4),
-      borderSide: const BorderSide(color: borderColor),
+      borderSide: BorderSide(color: borderColor),
     );
     return SizedBox(
       height: 56,
@@ -417,18 +422,18 @@ class _RegisterPageState extends State<RegisterPage> {
         onChanged: onChanged,
         onSubmitted: onSubmitted,
         enabled: !_isLoading,
-        style: const TextStyle(fontSize: 16, color: Color(0xFF1D1B20)),
+        style: TextStyle(fontSize: 16, color: cs.onSurface),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: const TextStyle(fontSize: 16, color: Color(0xFF49454F)),
-          prefixIcon: Icon(icon, size: 20, color: const Color(0xFF49454F)),
+          hintStyle: TextStyle(fontSize: 16, color: cs.onSurfaceVariant),
+          prefixIcon: Icon(icon, size: 20, color: cs.onSurfaceVariant),
           suffixIcon: suffix,
           contentPadding: const EdgeInsets.symmetric(horizontal: 11),
           border: border,
           enabledBorder: border,
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(4),
-            borderSide: const BorderSide(color: Color(0xFF6750A4), width: 1.5),
+            borderSide: BorderSide(color: cs.primary, width: 1.5),
           ),
         ),
       ),
@@ -436,6 +441,7 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   Widget _buildActions() {
+    final cs = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -445,21 +451,21 @@ class _RegisterPageState extends State<RegisterPage> {
           child: FilledButton(
             onPressed: _isLoading ? null : _handleRegister,
             style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFF6750A4),
-              disabledBackgroundColor: const Color(0x806750A4),
-              foregroundColor: Colors.white,
+              backgroundColor: cs.primary,
+              disabledBackgroundColor: cs.primary.withValues(alpha: 0.38),
+              foregroundColor: cs.onPrimary,
               elevation: 1,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(100),
               ),
             ),
             child: _isLoading
-                ? const SizedBox(
+                ? SizedBox(
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: Colors.white,
+                      color: cs.onPrimary,
                     ),
                   )
                 : const Text(
@@ -477,7 +483,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 : () => Navigator.of(context).pushReplacement(
                       MaterialPageRoute(builder: (_) => const LoginPage()),
                     ),
-            child: const Row(
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
@@ -485,11 +491,11 @@ class _RegisterPageState extends State<RegisterPage> {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: Color(0xFF6750A4),
+                    color: cs.primary,
                   ),
                 ),
                 SizedBox(width: 4),
-                Icon(Icons.arrow_forward, size: 16, color: Color(0xFF6750A4)),
+                Icon(Icons.arrow_forward, size: 16, color: cs.primary),
               ],
             ),
           ),

@@ -338,16 +338,16 @@ class _AddPostPageState extends State<AddPostPage> {
         padding: const EdgeInsets.symmetric(horizontal: 20),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: enabled ? cs.primary : const Color(0xFFCAC4D0),
+          color: enabled ? cs.primary : cs.outlineVariant,
           borderRadius: BorderRadius.circular(18),
         ),
         child: _isSubmitting
-            ? const SizedBox(
+            ? SizedBox(
                 width: 20,
                 height: 20,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: Colors.white,
+                  color: cs.onPrimary,
                 ),
               )
             : Text(
@@ -356,7 +356,7 @@ class _AddPostPageState extends State<AddPostPage> {
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: enabled
-                      ? Colors.white
+                      ? cs.onPrimary
                       : const Color(0xFF938F99),
                 ),
               ),
@@ -559,6 +559,7 @@ class _ImagePreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     // 自适应填充网格格子，尺寸跟随网格单元格，不固定为 80。
     return ClipRRect(
       borderRadius: BorderRadius.circular(14),
@@ -592,8 +593,8 @@ class _ImagePreview extends StatelessWidget {
               child: Container(
                 width: 20,
                 height: 20,
-                decoration: const BoxDecoration(
-                  color: Colors.black54,
+                decoration: BoxDecoration(
+                  color: cs.scrim.withValues(alpha: 0.54),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.close, size: 12, color: Colors.white),

@@ -86,13 +86,20 @@ class _PostMoreButtonState extends ConsumerState<PostMoreButton>
           ],
         ),
       ),
-      const PopupMenuItem(
+      PopupMenuItem(
         value: 'delete',
         child: Row(
           children: [
-            Icon(Icons.delete_outline, size: 20, color: Colors.red),
-            SizedBox(width: 8),
-            Text('删除', style: TextStyle(color: Colors.red)),
+            Icon(
+              Icons.delete_outline,
+              size: 20,
+              color: Theme.of(context).colorScheme.error,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '删除',
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
           ],
         ),
       ),

@@ -26,6 +26,7 @@ import '../data/services/api/api_client.dart';
 import '../data/services/token_storage_service.dart';
 import '../data/services/current_user_provider.dart';
 import '../data/services/global_config_provider.dart';
+import '../theme/theme_provider.dart';
 import 'env.dart';
 
 /// Single shared [ApiClient] used by both the provider tree and the Riverpod
@@ -38,6 +39,8 @@ final List<SingleChildWidget> _sharedProviders = [
       create: (_) => CurrentUserProvider()),
   ChangeNotifierProvider<GlobalConfigProvider>(
       create: (_) => GlobalConfigProvider(initialBaseUrl: Env.apiBaseUrl)),
+  ChangeNotifierProvider<ThemeProvider>(
+      create: (_) => ThemeProvider()..load()),
   Provider<ApiClient>(create: (_) => sharedApiClient),
 ];
 

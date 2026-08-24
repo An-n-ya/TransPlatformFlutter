@@ -77,8 +77,9 @@ class _WelcomeSetting2PageState extends State<WelcomeSetting2Page> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: const Color(0xFFFEF7FF),
+      backgroundColor: cs.surface,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) => SingleChildScrollView(
@@ -100,9 +101,9 @@ class _WelcomeSetting2PageState extends State<WelcomeSetting2Page> {
                         child: Text(
                           _errorMessage!,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
-                            color: Color(0xFFB3261E),
+                            color: cs.error,
                           ),
                         ),
                       ),
@@ -119,6 +120,7 @@ class _WelcomeSetting2PageState extends State<WelcomeSetting2Page> {
   }
 
   Widget _buildTopBar() {
+    final cs = Theme.of(context).colorScheme;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -135,27 +137,27 @@ class _WelcomeSetting2PageState extends State<WelcomeSetting2Page> {
                   shape: BoxShape.circle,
                 ),
                 alignment: Alignment.center,
-                child: const Icon(
+                child: Icon(
                   Icons.arrow_back,
                   size: 20,
-                  color: Color(0xFF1D1B20),
+                  color: cs.onSurface,
                 ),
               ),
             ),
             const SizedBox(width: 12),
             // Step indicator: 2/2
-            const Row(
+            Row(
               children: [
-                _StepBar(active: true),
-                SizedBox(width: 8),
-                _StepBar(active: true),
-                SizedBox(width: 8),
+                const _StepBar(active: true),
+                const SizedBox(width: 8),
+                const _StepBar(active: true),
+                const SizedBox(width: 8),
                 Text(
                   '2 / 2',
                   style: TextStyle(
                     fontSize: 12,
                     letterSpacing: 0.4,
-                    color: Color(0xFF49454F),
+                    color: cs.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -165,7 +167,7 @@ class _WelcomeSetting2PageState extends State<WelcomeSetting2Page> {
         TextButton(
           onPressed: _isSaving ? null : _skip,
           style: TextButton.styleFrom(
-            foregroundColor: const Color(0xFF49454F),
+            foregroundColor: cs.onSurfaceVariant,
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             minimumSize: Size.zero,
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -180,6 +182,7 @@ class _WelcomeSetting2PageState extends State<WelcomeSetting2Page> {
   }
 
   Widget _buildContent() {
+    final cs = Theme.of(context).colorScheme;
     return Column(
       children: [
         // Avatar preview (tappable → gallery)
@@ -204,10 +207,10 @@ class _WelcomeSetting2PageState extends State<WelcomeSetting2Page> {
                         width: 100,
                         height: 100,
                       )
-                    : const Icon(
+                    : Icon(
                         Icons.person_outline,
                         size: 44,
-                        color: Color(0xFF1C1B1F),
+                        color: cs.onSurface,
                       ),
               ),
               Positioned(
@@ -218,17 +221,17 @@ class _WelcomeSetting2PageState extends State<WelcomeSetting2Page> {
                   height: 30,
                   clipBehavior: Clip.hardEdge,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE8DEF8),
+                    color: cs.secondaryContainer,
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: const Color(0xFFFEF7FF),
+                      color: cs.surface,
                       width: 2,
                     ),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.photo_camera,
                     size: 14,
-                    color: Color(0xFF1C1B1F),
+                    color: cs.onSurface,
                   ),
                 ),
               ),
@@ -236,22 +239,22 @@ class _WelcomeSetting2PageState extends State<WelcomeSetting2Page> {
           ),
         ),
         const SizedBox(height: 24),
-        const Text(
+        Text(
           '选择头像',
           style: TextStyle(
             fontSize: 28,
             height: 36 / 28,
-            color: Color(0xFF1C1B1F),
+            color: cs.onSurface,
           ),
         ),
         const SizedBox(height: 6),
-        const Text(
+        Text(
           '上传一张图片作为您的头像',
           style: TextStyle(
             fontSize: 14,
             height: 21 / 14,
             letterSpacing: 0.25,
-            color: Color(0xFF49454F),
+            color: cs.onSurfaceVariant,
           ),
         ),
         const SizedBox(height: 24),
@@ -262,8 +265,8 @@ class _WelcomeSetting2PageState extends State<WelcomeSetting2Page> {
             // FIXME: 复用Avatar Preview的onTap逻辑。
             onPressed: _isSaving ? null : _handleAvatarPick,
             style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFF49454F),
-              side: const BorderSide(color: Color(0xFF79747E)),
+              foregroundColor: cs.onSurfaceVariant,
+              side: BorderSide(color: cs.outline),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -281,26 +284,27 @@ class _WelcomeSetting2PageState extends State<WelcomeSetting2Page> {
   }
 
   Widget _buildFinishButton() {
+    final cs = Theme.of(context).colorScheme;
     return SizedBox(
       height: 40,
       child: FilledButton(
         onPressed: _isSaving ? null : _finish,
         style: FilledButton.styleFrom(
-          backgroundColor: const Color(0xFF6750A4),
-          disabledBackgroundColor: const Color(0x806750A4),
-          foregroundColor: Colors.white,
+          backgroundColor: cs.primary,
+          disabledBackgroundColor: cs.primary.withValues(alpha: 0.38),
+          foregroundColor: cs.onPrimary,
           elevation: 1,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(100),
           ),
         ),
         child: _isSaving
-            ? const SizedBox(
+            ? SizedBox(
                 width: 20,
                 height: 20,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: Colors.white,
+                  color: cs.onPrimary,
                 ),
               )
             : const Text(
@@ -320,11 +324,12 @@ class _StepBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       width: active ? 24 : 16,
       height: 4,
       decoration: BoxDecoration(
-        color: active ? const Color(0xFF6750A4) : const Color(0xFFCAC4D0),
+        color: active ? cs.primary : cs.outlineVariant,
         borderRadius: BorderRadius.circular(100),
       ),
     );

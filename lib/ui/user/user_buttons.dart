@@ -227,14 +227,15 @@ class _UserIconMoreButtonState extends ConsumerState<UserIconMoreButton>
       ];
     }
     if (isFollowing) {
-      return const [
+      final cs = Theme.of(context).colorScheme;
+      return [
         PopupMenuItem(
           value: 'unfollow',
           child: Row(
             children: [
-              Icon(Icons.person_remove, size: 20, color: Colors.red),
+              Icon(Icons.person_remove, size: 20, color: cs.error),
               SizedBox(width: 8),
-              Text('取消关注', style: TextStyle(color: Colors.red)),
+              Text('取消关注', style: TextStyle(color: cs.error)),
             ],
           ),
         ),

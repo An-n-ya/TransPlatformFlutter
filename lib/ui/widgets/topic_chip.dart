@@ -26,7 +26,7 @@ class TopicChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color: const Color(0xFFEADDFF),
+          color: cs.primaryContainer,
           borderRadius: BorderRadius.circular(100),
         ),
         child: Row(

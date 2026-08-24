@@ -144,6 +144,7 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(title: const Text('语音通话')),
       body: Center(
@@ -175,7 +176,7 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
             const SizedBox(height: 8),
             if (_isJoined && _remoteUid != null)
               Text('对方 UID: $_remoteUid',
-                  style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                  style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
             const SizedBox(height: 40),
 
             // Call controls
@@ -210,7 +211,7 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
                     onPressed: _endCall,
                     icon: const Icon(Icons.call_end),
                     style: IconButton.styleFrom(
-                      backgroundColor: Colors.red,
+                      backgroundColor: cs.error,
                       foregroundColor: Colors.white,
                     ),
                     tooltip: '挂断',
