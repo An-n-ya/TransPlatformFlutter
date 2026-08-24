@@ -56,8 +56,11 @@ class _AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Scaffold(
       bottomNavigationBar: NavigationBar(
+        indicatorColor: colorScheme.primaryContainer,
         selectedIndex: _tabIndex,
         onDestinationSelected: _onTabSelected,
         destinations: const [

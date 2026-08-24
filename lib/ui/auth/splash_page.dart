@@ -96,7 +96,7 @@ class _SplashPageState extends State<SplashPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Image.asset('assets/images/logoTP.png', width: 72, height: 72),
+            Image.asset('assets/images/logoTP_Transparent.png', width: 72, height: 72),
             const SizedBox(height: 24),
             const CircularProgressIndicator(),
           ],

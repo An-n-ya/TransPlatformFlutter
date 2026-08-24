@@ -87,9 +87,7 @@ class _AddPostPageState extends State<AddPostPage> {
 
   Future<void> _addTopics() async {
     final result = await Navigator.of(context).push<List<Topic>>(
-      MaterialPageRoute(
-        builder: (_) => AddTopicPage(initialSelected: _topics),
-      ),
+      MaterialPageRoute(builder: (_) => AddTopicPage(initialSelected: _topics)),
     );
     if (result != null && mounted) {
       setState(() {
@@ -132,12 +130,11 @@ class _AddPostPageState extends State<AddPostPage> {
   }
 
   Future<void> _submitPost() async {
-    
     final content = _textController.text.trim();
     if (content.isEmpty && _selectedImages.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('请输入内容或选择图片')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('请输入内容或选择图片')));
       return;
     }
 
@@ -145,29 +142,26 @@ class _AddPostPageState extends State<AddPostPage> {
 
     // Pass the selected topic IDs to the post
     final result = await context.read<PostRepository>().createPost(
-          content: content,
-          location: _locationLabel,
-          images:
-              _selectedImages.isNotEmpty
-                  ? _selectedImages.map((f) => f.path).toList()
-                  : null,
-          topicIds: _topics.isNotEmpty ? _topics.map((t) => t.id).toList() : null,
-        );
+      content: content,
+      location: _locationLabel,
+      images: _selectedImages.isNotEmpty
+          ? _selectedImages.map((f) => f.path).toList()
+          : null,
+      topicIds: _topics.isNotEmpty ? _topics.map((t) => t.id).toList() : null,
+    );
 
     if (!mounted) return;
 
     switch (result) {
       case Ok<Post>():
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('发布成功')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('发布成功')));
         Navigator.of(context).pop();
       case Error<Post>():
         setState(() => _isSubmitting = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('发布失败: ${_extractError(result.error)}'),
-          ),
+          SnackBar(content: Text('发布失败: ${_extractError(result.error)}')),
         );
     }
   }
@@ -208,9 +202,7 @@ class _AddPostPageState extends State<AddPostPage> {
           permission == PermissionStatus.deniedForever) {
         if (!mounted) return;
         setState(() => _isLocating = false);
-        messenger.showSnackBar(
-          const SnackBar(content: Text('未获得定位权限，无法获取位置')),
-        );
+        messenger.showSnackBar(const SnackBar(content: Text('未获得定位权限，无法获取位置')));
         return;
       }
 
@@ -221,9 +213,10 @@ class _AddPostPageState extends State<AddPostPage> {
       final longitude = position.longitude;
 
       // 4. 调用后端逆地理编码接口，将坐标解析为城市名称。
-      final result = await context
-          .read<LocationRepository>()
-          .reverseGeocode(latitude: latitude, longitude: longitude);
+      final result = await context.read<LocationRepository>().reverseGeocode(
+        latitude: latitude,
+        longitude: longitude,
+      );
       if (!mounted) return;
 
       switch (result) {
@@ -242,9 +235,7 @@ class _AddPostPageState extends State<AddPostPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLocating = false);
-      messenger.showSnackBar(
-        SnackBar(content: Text('获取位置失败：$e')),
-      );
+      messenger.showSnackBar(SnackBar(content: Text('获取位置失败：$e')));
     }
   }
 
@@ -306,8 +297,9 @@ class _AddPostPageState extends State<AddPostPage> {
           children: [
             IconButton(
               icon: const Icon(Icons.arrow_back, size: 22),
-              onPressed:
-                  _isSubmitting ? null : () => Navigator.of(context).pop(),
+              onPressed: _isSubmitting
+                  ? null
+                  : () => Navigator.of(context).pop(),
             ),
             Expanded(
               child: Center(
@@ -355,9 +347,7 @@ class _AddPostPageState extends State<AddPostPage> {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: enabled
-                      ? cs.onPrimary
-                      : const Color(0xFF938F99),
+                  color: enabled ? cs.onPrimary : const Color(0xFF938F99),
                 ),
               ),
       ),
@@ -435,6 +425,11 @@ class _AddPostPageState extends State<AddPostPage> {
                           color: Color(0xFFC4BFCA),
                         ),
                         border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        disabledBorder: InputBorder.none,
+                        errorBorder: InputBorder.none,
+                        focusedErrorBorder: InputBorder.none,
                         isDense: true,
                         contentPadding: EdgeInsets.zero,
                       ),
@@ -512,8 +507,7 @@ class _AddPostPageState extends State<AddPostPage> {
             builder: (context, constraints) {
               final tileSize = (constraints.maxWidth - spacing * 2) / 3;
               final rowCount = (tileCount / 3).ceil();
-              final gridHeight =
-                  rowCount * tileSize + (rowCount - 1) * spacing;
+              final gridHeight = rowCount * tileSize + (rowCount - 1) * spacing;
               return SizedBox(
                 height: gridHeight,
                 child: GridView.builder(
@@ -688,8 +682,11 @@ class _AddPhotoTile extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.add_photo_alternate_outlined,
-                size: 22, color: cs.onSurfaceVariant),
+            Icon(
+              Icons.add_photo_alternate_outlined,
+              size: 22,
+              color: cs.onSurfaceVariant,
+            ),
             const SizedBox(height: 4),
             Text(
               '添加',
@@ -776,11 +773,7 @@ class _OptionTile extends StatelessWidget {
                 child: CircularProgressIndicator(strokeWidth: 2),
               )
             else
-              Icon(
-                Icons.chevron_right,
-                size: 18,
-                color: cs.onSurfaceVariant,
-              ),
+              Icon(Icons.chevron_right, size: 18, color: cs.onSurfaceVariant),
           ],
         ),
       ),

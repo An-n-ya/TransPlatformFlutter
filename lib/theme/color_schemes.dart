@@ -18,15 +18,19 @@ import 'app_palette.dart';
 /// - `0xFFB3261E`, `Colors.red`         -> `error`
 final ColorScheme lightColorScheme = ColorScheme.fromSeed(
   seedColor: AppPalette.seed,
-  primary: const Color(0xFFFCF16E),
+  // // fromSeed 会把黄色 seed 推导成 tone-40 深芥末色 #666000（FAB 上看到的就是它），
+  // // 因此显式覆写 primary / onPrimary 才能拿到品牌亮黄 + 深色前景。
+  // primary: const Color(0xFFFCF16E),
+  // onPrimary: const Color(0xFF212121),
   brightness: Brightness.light,
-  dynamicSchemeVariant: DynamicSchemeVariant.fidelity,
+  dynamicSchemeVariant: DynamicSchemeVariant.vibrant,
 );
 
 /// Dark color scheme derived from the same brand seed. Contrast is handled
 /// automatically by Material tonal palettes.
 final ColorScheme darkColorScheme = ColorScheme.fromSeed(
   seedColor: AppPalette.seed,
+  primary: const Color(0xFF666000),
   brightness: Brightness.dark,
   dynamicSchemeVariant: DynamicSchemeVariant.fidelity,
 );

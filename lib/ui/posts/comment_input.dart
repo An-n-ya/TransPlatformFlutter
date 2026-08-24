@@ -50,6 +50,11 @@ class CommentInput extends StatelessWidget {
                   decoration: const InputDecoration(
                     hintText: '我有话要说！',
                     border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    disabledBorder: InputBorder.none,
+                    errorBorder: InputBorder.none,
+                    focusedErrorBorder: InputBorder.none,
                     isDense: true,
                     contentPadding: EdgeInsets.symmetric(vertical: 10),
                   ),

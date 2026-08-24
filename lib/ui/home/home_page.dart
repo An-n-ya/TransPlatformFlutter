@@ -75,8 +75,8 @@ class HomePage extends StatelessWidget {
           onPressed: () => Navigator.of(
             context,
           ).push(MaterialPageRoute(builder: (_) => const AddPostPage())),
-          backgroundColor: colorScheme.primary,
-          child: Icon(Icons.add, color: colorScheme.onPrimary),
+          backgroundColor: colorScheme.primaryContainer,
+          child: Icon(Icons.add, color: colorScheme.primary),
         ),
       ),
     );

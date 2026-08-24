@@ -16,7 +16,7 @@ class AboutPage extends StatelessWidget {
         children: [
           // App icon
           Center(
-            child: Image.asset('assets/images/logoTP.png',
+            child: Image.asset('assets/images/logoTP_Transparent.png',
                 width: 80, height: 80),
           ),
           const SizedBox(height: 16),
@@ -58,9 +58,8 @@ class AboutPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'TransPlatform 是一个跨平台社交应用，支持发布图文动态、'
-                    '点赞评论、关注好友等社交功能。应用采用 Flutter 开发，'
-                    '后端基于 Spring Boot 构建。',
+                    'TransPlatform 是一个专为跨儿社群打造的社交应用，支持发布图文动态、'
+                    '点赞评论、关注好友等社交功能。',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       height: 1.6,
                       color: colorScheme.onSurfaceVariant,

@@ -154,7 +154,7 @@ class _PostCardState extends ConsumerState<PostCard> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: cs.surface,
+        color: cs.surfaceContainer,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: cs.outlineVariant.withValues(alpha: 0x22 / 0xFF),
