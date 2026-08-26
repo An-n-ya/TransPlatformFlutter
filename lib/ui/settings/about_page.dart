@@ -24,7 +24,7 @@ class AboutPage extends StatelessWidget {
           // App name
           Center(
             child: Text(
-              'TransPlatform',
+              '银杏叶社区',
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -58,7 +58,7 @@ class AboutPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'TransPlatform 是一个专为跨儿社群打造的社交应用，支持发布图文动态、'
+                    '这是一个专为跨儿社群打造的社交应用，支持发布图文动态、'
                     '点赞评论、关注好友等社交功能。',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       height: 1.6,
