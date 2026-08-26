@@ -14,9 +14,39 @@
 #   - ios/.symlinks
 #   - ios/Pods            (CocoaPods dependencies)
 #
+# IMPORTANT (root cause of earlier failures):
+# Xcode Cloud runs ci_post_clone.sh with the working directory set to the
+# directory that CONTAINS the script (here: ios/ci_scripts), NOT the repository
+# root. Every relative path in this file therefore resolves against
+# ios/ci_scripts unless we cd to the project root first — which previously made
+# "ios/Flutter/ephemeral/..." and "cd ios" look in the wrong place and the
+# script fail with "FlutterGeneratedPluginSwiftPackage was NOT generated".
+# We resolve the project root explicitly and cd into it at the very start.
+#
 # Every line prints a marker so you can confirm in the Xcode Cloud logs that
 # this script actually ran and that the required package was generated.
 set -e
+
+SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+
+# ---------------------------------------------------------------------------
+# 0. Locate the Flutter project root (first ancestor containing pubspec.yaml)
+#    and cd into it so every relative path below is correct.
+# ---------------------------------------------------------------------------
+PROJECT_ROOT="$SCRIPT_DIR"
+while [ ! -f "$PROJECT_ROOT/pubspec.yaml" ] && [ "$PROJECT_ROOT" != "/" ]; do
+  PROJECT_ROOT="$(dirname -- "$PROJECT_ROOT")"
+done
+if [ ! -f "$PROJECT_ROOT/pubspec.yaml" ] && \
+   [ -n "${CI_PRIMARY_REPOSITORY_PATH:-}" ] && \
+   [ -f "$CI_PRIMARY_REPOSITORY_PATH/pubspec.yaml" ]; then
+  PROJECT_ROOT="$CI_PRIMARY_REPOSITORY_PATH"
+fi
+if [ ! -f "$PROJECT_ROOT/pubspec.yaml" ]; then
+  echo "ERROR: could not locate Flutter project root (pubspec.yaml); searched up from $SCRIPT_DIR" >&2
+  exit 1
+fi
+cd "$PROJECT_ROOT"
 
 echo "=== [ci_post_clone] start: $(pwd) user=$(whoami) ==="
 
@@ -51,29 +81,83 @@ flutter config --enable-swift-package-manager
 echo "=== [ci_post_clone] flutter pub get ==="
 flutter pub get
 
-echo "=== [ci_post_clone] verifying generated SPM package ==="
-if [ -d "ios/Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage" ]; then
-  echo "OK: ios/Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage present"
-  ls -la ios/Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage/
+# ---------------------------------------------------------------------------
+# 2b. Patch agora_rtc_engine's SPM binary manifest (see fix_agora_spm.sh).
+#     The plugin's Package.swift pins AgoraIrisRTC_iOS-4.5.2-build.1.zip, which
+#     does NOT contain AgoraPIPController.h; the 4.5.3-build.1 archive does.
+#     Without this the archive step fails with
+#     "'AgoraRtcWrapper/AgoraPIPController.h' file not found".
+#     Non-fatal: if the manifest cannot be found/patched we log a warning and
+#     continue so this never blocks ci_post_clone itself.
+# ---------------------------------------------------------------------------
+echo "=== [ci_post_clone] patching agora_rtc_engine SPM manifest ==="
+AGORA_VERSION="6.5.4"
+AGORA_OLD_URL="https://download.agora.io/sdk/release/AgoraIrisRTC_iOS-4.5.2-build.1.zip"
+AGORA_NEW_URL="https://download.agora.io/sdk/release/AgoraIrisRTC_iOS-4.5.3-build.1.zip"
+AGORA_OLD_SUM="d5daaf4ef5a773c8710ac45fb72cc72b5a7757e3d63e3d58ced38fd9368de05e"
+AGORA_NEW_SUM="0ec17b1658d4f149e962f16d88c23f71b97319416e6e136bf32e7a12b7bdc352"
+
+AGORA_PKG=""
+for _host in pub.dev pub.flutter-io.cn; do
+  _candidate="$HOME/.pub-cache/hosted/$_host/agora_rtc_engine-$AGORA_VERSION/ios/agora_rtc_engine/Package.swift"
+  if [ -f "$_candidate" ]; then
+    AGORA_PKG="$_candidate"
+    break
+  fi
+done
+if [ -z "$AGORA_PKG" ]; then
+  AGORA_PKG="$(find "$HOME/.pub-cache/hosted" \
+    -path "*/agora_rtc_engine-$AGORA_VERSION/ios/agora_rtc_engine/Package.swift" \
+    2>/dev/null | head -n 1)"
+fi
+
+if [ -z "$AGORA_PKG" ] || [ ! -f "$AGORA_PKG" ]; then
+  echo "WARN: agora_rtc_engine Package.swift not found in pub cache; skipping SPM patch"
 else
-  echo "ERROR: FlutterGeneratedPluginSwiftPackage was NOT generated"
-  echo "ls ios/Flutter/ephemeral:"
-  ls -la ios/Flutter/ephemeral 2>&1 || true
-  exit 1
+  if grep -q "$AGORA_NEW_URL" "$AGORA_PKG"; then
+    echo "OK (already patched): $AGORA_PKG"
+  else
+    cp "$AGORA_PKG" "$AGORA_PKG.bak"
+    sed -i '' "s|$AGORA_OLD_URL|$AGORA_NEW_URL|; s|$AGORA_OLD_SUM|$AGORA_NEW_SUM|" "$AGORA_PKG"
+    echo "PATCHED: $AGORA_PKG"
+  fi
+  # Clear any stale SPM artifact for agora so the patched manifest is re-read.
+  rm -rf \
+    "$PROJECT_ROOT/build/ios/SourcePackages/artifacts/agora_rtc_engine-$AGORA_VERSION" \
+    "$PROJECT_ROOT/build/ios/SourcePackages/artifacts/extract/agora_rtc_engine-$AGORA_VERSION" \
+    2>/dev/null || true
 fi
 
 # ---------------------------------------------------------------------------
-# 3. Install CocoaPods dependencies (ios/Pods).
+# 2c. Deterministically (re)generate all iOS project artifacts without running
+#     a full build. `flutter build ios --config-only` regenerates
+#     Generated.xcconfig, the FlutterGeneratedPluginSwiftPackage SPM package,
+#     plugin symlinks, and (if any plugin needs it) installs CocoaPods. It is
+#     the officially documented Flutter step for CI/CD that creates an archive,
+#     and it does not depend on `flutter pub get` side effects, which have
+#     shifted between Flutter versions.
 # ---------------------------------------------------------------------------
+echo "=== [ci_post_clone] ensuring CocoaPods is available ==="
 if ! command -v pod >/dev/null 2>&1; then
   echo "=== [ci_post_clone] CocoaPods not found, installing... ==="
   gem install cocoapods --no-document
+else
+  echo "=== [ci_post_clone] CocoaPods found: $(pod --version 2>/dev/null || echo unknown) ==="
 fi
 
-echo "=== [ci_post_clone] pod install ==="
-(
-  cd ios
-  pod install
-)
+echo "=== [ci_post_clone] flutter build ios --config-only ==="
+flutter build ios --config-only --no-codesign
+
+echo "=== [ci_post_clone] verifying generated SPM package ==="
+SPM_PACKAGE_DIR="$PROJECT_ROOT/ios/Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage"
+if [ -d "$SPM_PACKAGE_DIR" ]; then
+  echo "OK: $SPM_PACKAGE_DIR present"
+  ls -la "$SPM_PACKAGE_DIR/"
+else
+  echo "ERROR: FlutterGeneratedPluginSwiftPackage was NOT generated"
+  echo "ls ios/Flutter/ephemeral:"
+  ls -la "$PROJECT_ROOT/ios/Flutter/ephemeral" 2>&1 || true
+  exit 1
+fi
 
 echo "=== [ci_post_clone] complete ==="
