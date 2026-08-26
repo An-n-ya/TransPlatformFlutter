@@ -14,52 +14,66 @@
 #   - ios/.symlinks
 #   - ios/Pods            (CocoaPods dependencies)
 #
-# We generate them here, before xcodebuild tries to resolve them.
+# Every line prints a marker so you can confirm in the Xcode Cloud logs that
+# this script actually ran and that the required package was generated.
 set -e
 
-FLUTTER_CHANNEL="stable"
+echo "=== [ci_post_clone] start: $(pwd) user=$(whoami) ==="
+
+FLUTTER_CHANNEL="${FLUTTER_CHANNEL:-stable}"
+FLUTTER_SDK="$HOME/flutter"
 
 # ---------------------------------------------------------------------------
 # 1. Install / locate the Flutter SDK.
 # ---------------------------------------------------------------------------
-FLUTTER_SDK="$HOME/flutter"
-
 if [ ! -x "$FLUTTER_SDK/bin/flutter" ]; then
-  echo "==> Cloning Flutter SDK ($FLUTTER_CHANNEL)..."
-  git clone --depth 1 \
-    --branch "$FLUTTER_CHANNEL" \
+  echo "=== [ci_post_clone] cloning Flutter SDK ($FLUTTER_CHANNEL) -> $FLUTTER_SDK ==="
+  rm -rf "$FLUTTER_SDK"
+  git clone --depth 1 --branch "$FLUTTER_CHANNEL" \
     https://github.com/flutter/flutter.git \
     "$FLUTTER_SDK"
 else
-  echo "==> Flutter SDK already present at $FLUTTER_SDK"
+  echo "=== [ci_post_clone] Flutter SDK already present at $FLUTTER_SDK ==="
 fi
 
 export PATH="$FLUTTER_SDK/bin:$PATH"
 
-flutter config --no-analytics >/dev/null 2>&1 || true
+echo "=== [ci_post_clone] flutter version ==="
+flutter --version
+
+# Make sure Swift Package Manager is enabled so `flutter pub get` emits the
+# FlutterGeneratedPluginSwiftPackage directory that the Xcode project needs.
+flutter config --enable-swift-package-manager
 
 # ---------------------------------------------------------------------------
-# 2. Generate the Flutter artifacts required by the Xcode project.
-#    `flutter pub get` generates:
-#      - ios/Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage
-#      - ios/Flutter/Generated.xcconfig
-#      - ios/.symlinks
+# 2. Generate Flutter artifacts (SPM package, Generated.xcconfig, .symlinks).
 # ---------------------------------------------------------------------------
-echo "==> flutter pub get..."
+echo "=== [ci_post_clone] flutter pub get ==="
 flutter pub get
+
+echo "=== [ci_post_clone] verifying generated SPM package ==="
+if [ -d "ios/Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage" ]; then
+  echo "OK: ios/Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage present"
+  ls -la ios/Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage/
+else
+  echo "ERROR: FlutterGeneratedPluginSwiftPackage was NOT generated"
+  echo "ls ios/Flutter/ephemeral:"
+  ls -la ios/Flutter/ephemeral 2>&1 || true
+  exit 1
+fi
 
 # ---------------------------------------------------------------------------
 # 3. Install CocoaPods dependencies (ios/Pods).
 # ---------------------------------------------------------------------------
 if ! command -v pod >/dev/null 2>&1; then
-  echo "==> CocoaPods not found, installing..."
+  echo "=== [ci_post_clone] CocoaPods not found, installing... ==="
   gem install cocoapods --no-document
 fi
 
-echo "==> pod install..."
+echo "=== [ci_post_clone] pod install ==="
 (
   cd ios
   pod install
 )
 
-echo "==> Xcode Cloud post-clone setup complete."
+echo "=== [ci_post_clone] complete ==="
