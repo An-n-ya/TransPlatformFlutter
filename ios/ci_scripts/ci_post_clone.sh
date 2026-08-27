@@ -75,6 +75,8 @@ flutter --version
 # FlutterGeneratedPluginSwiftPackage directory that the Xcode project needs.
 flutter config --enable-swift-package-manager
 
+flutter precache --ios
+
 # ---------------------------------------------------------------------------
 # 2. Generate Flutter artifacts (SPM package, Generated.xcconfig, .symlinks).
 # ---------------------------------------------------------------------------
