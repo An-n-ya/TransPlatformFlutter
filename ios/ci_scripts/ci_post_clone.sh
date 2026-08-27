@@ -84,54 +84,7 @@ echo "=== [ci_post_clone] flutter pub get ==="
 flutter pub get
 
 # ---------------------------------------------------------------------------
-# 2b. Patch agora_rtc_engine's SPM binary manifest (see fix_agora_spm.sh).
-#     The plugin's Package.swift pins AgoraIrisRTC_iOS-4.5.2-build.1.zip, which
-#     does NOT contain AgoraPIPController.h; the 4.5.3-build.1 archive does.
-#     Without this the archive step fails with
-#     "'AgoraRtcWrapper/AgoraPIPController.h' file not found".
-#     Non-fatal: if the manifest cannot be found/patched we log a warning and
-#     continue so this never blocks ci_post_clone itself.
-# ---------------------------------------------------------------------------
-echo "=== [ci_post_clone] patching agora_rtc_engine SPM manifest ==="
-AGORA_VERSION="6.5.4"
-AGORA_OLD_URL="https://download.agora.io/sdk/release/AgoraIrisRTC_iOS-4.5.2-build.1.zip"
-AGORA_NEW_URL="https://download.agora.io/sdk/release/AgoraIrisRTC_iOS-4.5.3-build.1.zip"
-AGORA_OLD_SUM="d5daaf4ef5a773c8710ac45fb72cc72b5a7757e3d63e3d58ced38fd9368de05e"
-AGORA_NEW_SUM="0ec17b1658d4f149e962f16d88c23f71b97319416e6e136bf32e7a12b7bdc352"
-
-AGORA_PKG=""
-for _host in pub.dev pub.flutter-io.cn; do
-  _candidate="$HOME/.pub-cache/hosted/$_host/agora_rtc_engine-$AGORA_VERSION/ios/agora_rtc_engine/Package.swift"
-  if [ -f "$_candidate" ]; then
-    AGORA_PKG="$_candidate"
-    break
-  fi
-done
-if [ -z "$AGORA_PKG" ]; then
-  AGORA_PKG="$(find "$HOME/.pub-cache/hosted" \
-    -path "*/agora_rtc_engine-$AGORA_VERSION/ios/agora_rtc_engine/Package.swift" \
-    2>/dev/null | head -n 1)"
-fi
-
-if [ -z "$AGORA_PKG" ] || [ ! -f "$AGORA_PKG" ]; then
-  echo "WARN: agora_rtc_engine Package.swift not found in pub cache; skipping SPM patch"
-else
-  if grep -q "$AGORA_NEW_URL" "$AGORA_PKG"; then
-    echo "OK (already patched): $AGORA_PKG"
-  else
-    cp "$AGORA_PKG" "$AGORA_PKG.bak"
-    sed -i '' "s|$AGORA_OLD_URL|$AGORA_NEW_URL|; s|$AGORA_OLD_SUM|$AGORA_NEW_SUM|" "$AGORA_PKG"
-    echo "PATCHED: $AGORA_PKG"
-  fi
-  # Clear any stale SPM artifact for agora so the patched manifest is re-read.
-  rm -rf \
-    "$PROJECT_ROOT/build/ios/SourcePackages/artifacts/agora_rtc_engine-$AGORA_VERSION" \
-    "$PROJECT_ROOT/build/ios/SourcePackages/artifacts/extract/agora_rtc_engine-$AGORA_VERSION" \
-    2>/dev/null || true
-fi
-
-# ---------------------------------------------------------------------------
-# 2c. Deterministically (re)generate all iOS project artifacts without running
+# 2b. Deterministically (re)generate all iOS project artifacts without running
 #     a full build. `flutter build ios --config-only` regenerates
 #     Generated.xcconfig, the FlutterGeneratedPluginSwiftPackage SPM package,
 #     plugin symlinks, and (if any plugin needs it) installs CocoaPods. It is

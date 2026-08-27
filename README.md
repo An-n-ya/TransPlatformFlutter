@@ -2,6 +2,17 @@
 
 A new Flutter project.
 
+## 分支说明
+
+- **`main`** — 生产分支，不含语音通话（chatroom）功能，依赖更少、构建更简单、包体积更小。
+- **`chatroom`** — 语音通话实验分支，依赖 `agora_rtc_engine`，并在底部导航中带有
+  "活动" tab（`lib/ui/activites/activities_page.dart`）。该功能尚未达到生产级别。
+
+将 chatroom 的改动合并回 `main` 时，需要一并带回：
+`pubspec.yaml` 依赖、`lib/ui/activites/`、`lib/ui/home/app_shell.dart` 中的活动 tab、
+`fix_agora_aar.sh` / `fix_agora_spm.sh`，以及 CI（`.github/workflows/build_armv8_apk.yml`、
+`ios/ci_scripts/ci_post_clone.sh`）中对应的 Agora 步骤。
+
 ## Flavors（prod / dev）
 
 项目支持 `prod` 与 `dev` 两种构建 flavor，不同点：

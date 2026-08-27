@@ -22,7 +22,6 @@ void main() {
 
     // Verify the app loaded — look for the bottom nav
     expect(find.text('首页'), findsOneWidget);
-    expect(find.text('活动'), findsOneWidget);
     expect(find.text('我的'), findsOneWidget);
   });
 }
