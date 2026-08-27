@@ -29,7 +29,26 @@ jobs:
       - name: Flutter pub get
         run: flutter pub get
 
-      - name: Build ARMv8 APK (prod flavor)
+      - name: Decode Keystore
+        # KEYSTORE_BASE64 是 android/app/my-ks.keystore 的 base64 内容。
+        # 注意仓库结构：Android 模块在 android/app/ 下，Gradle 的 storeFile 相对路径
+        # 以 android/app/ 为基准，所以必须解码到 android/app/my-ks.keystore。
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/my-ks.keystore
+
+      - name: Verify Keystore
+        run: |
+          test -s android/app/my-ks.keystore \
+            && echo "keystore OK ($(stat -c%s android/app/my-ks.keystore) bytes)" \
+            || { echo "ERROR: android/app/my-ks.keystore is missing or empty"; exit 1; }
+
+      - name: Build ARMv8 APK (prod flavor, release-signed)
+        env:
+          # 与 android/key.properties 对应的凭据，从 GitHub secrets 注入。
+          # 如果 store 与 key 密码相同，两个 secret 填同一个值即可。
+          KEYSTORE_STORE_PASSWORD: ${{ secrets.KEYSTORE_STORE_PASSWORD }}
+          KEYSTORE_KEY_PASSWORD: ${{ secrets.KEYSTORE_KEY_PASSWORD }}
+          KEYSTORE_KEY_ALIAS: ${{ secrets.KEYSTORE_KEY_ALIAS }}
         run: flutter build apk --release --flavor prod --dart-define=appFlavor=prod --target lib/main_remote.dart --target-platform android-arm64
 
       - name: Upload APK artifact

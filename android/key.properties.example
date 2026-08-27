@@ -1,0 +1,16 @@
+# Copy this file to android/key.properties and fill in your real values.
+# android/key.properties is gitignored — never commit real passwords.
+#
+# The keystore file (android/app/my-ks.keystore) lives at:
+#   android/app/my-ks.keystore   (default storeFile, relative to android/app/)
+#
+# In CI (GitHub Actions) these values are injected as secrets instead:
+#   KEYSTORE_STORE_PASSWORD  →  storePassword
+#   KEYSTORE_KEY_PASSWORD    →  keyPassword   (optional, falls back to storePassword)
+#   KEYSTORE_KEY_ALIAS       →  keyAlias
+#   KEYSTORE_BASE64          →  decoded to android/app/my-ks.keystore
+
+storePassword=CHANGE_ME
+keyPassword=CHANGE_ME        # can be the same as storePassword, or remove this line
+keyAlias=CHANGE_ME
+storeFile=my-ks.keystore

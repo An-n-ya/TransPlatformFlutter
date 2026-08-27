@@ -1,8 +1,29 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
+
+// ---- Release signing config ---------------------------------------------
+// 本地构建：在 android/key.properties 中填写（已被 .gitignore 忽略）：
+//   storePassword=...
+//   keyPassword=...
+//   keyAlias=...
+//   storeFile=my-ks.keystore
+// CI 构建：通过环境变量注入（GitHub Actions secrets），与 key.properties 等价：
+//   KEYSTORE_STORE_PASSWORD / KEYSTORE_KEY_PASSWORD / KEYSTORE_KEY_ALIAS
+// keystore 文件本身（android/app/my-ks.keystore）通过 KEYSTORE_BASE64 secret 解码得到。
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("key.properties")
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+}
+val storePasswordFromEnv = System.getenv("KEYSTORE_STORE_PASSWORD")
+val keyPasswordFromEnv = System.getenv("KEYSTORE_KEY_PASSWORD")
+val keyAliasFromEnv = System.getenv("KEYSTORE_KEY_ALIAS")
 
 android {
     namespace = "com.example.trans_platform"
@@ -14,6 +35,20 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    signingConfigs {
+        create("release") {
+            val sp = keystoreProperties["storePassword"] as? String
+                ?: storePasswordFromEnv
+            storePassword = sp
+            keyPassword = keystoreProperties["keyPassword"] as? String
+                ?: keyPasswordFromEnv
+                ?: sp // 未单独设置 key 密码时回退到 store 密码
+            keyAlias = keystoreProperties["keyAlias"] as? String
+                ?: keyAliasFromEnv
+            storeFile = file(keystoreProperties["storeFile"] as? String ?: "my-ks.keystore")
+        }
     }
 
     defaultConfig {
@@ -52,8 +87,33 @@ android {
 
     buildTypes {
         release {
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            val releaseSigning = signingConfigs.getByName("release")
+            val hasFullCreds = listOf(
+                releaseSigning.storePassword,
+                releaseSigning.keyPassword,
+                releaseSigning.keyAlias
+            ).all { !it.isNullOrBlank() } && (releaseSigning.storeFile?.exists() == true)
+            val envSigningConfigured = listOf(
+                storePasswordFromEnv,
+                keyPasswordFromEnv,
+                keyAliasFromEnv
+            ).any { !it.isNullOrBlank() }
+
+            when {
+                // 完整凭据 → 使用正式签名
+                hasFullCreds -> signingConfig = releaseSigning
+
+                // 完全没有任何签名配置（本地开发）→ 回退到 debug 签名，保证 `flutter run --release` 可用
+                keystoreProperties.isEmpty() && !envSigningConfigured ->
+                    signingConfig = signingConfigs.getByName("debug")
+
+                // 部分配置缺失 → 直接报错，避免 CI 静默产出 debug 签名的“生产包”
+                else -> throw GradleException(
+                    "Release signing is incomplete. Provide android/key.properties " +
+                        "or KEYSTORE_STORE_PASSWORD / KEYSTORE_KEY_PASSWORD / KEYSTORE_KEY_ALIAS " +
+                        "and ensure android/app/my-ks.keystore exists."
+                )
+            }
         }
     }
 }
