@@ -24,12 +24,30 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-        // FIXME: 只在production flavor下使用下面配置
-        //ndk {
-        //    abiFilters.clear()
-        //    abiFilters.addAll(listOf("arm64-v8a"))
-        //}
+    }
 
+    // ---- Flavors: prod / dev -------------------------------------------
+    // 每个 flavor 需要配合 --dart-define=appFlavor=<flavor> 使用，
+    // 使 Dart 侧 (lib/config/env.dart) 能读取到当前构建的环境。
+    //
+    //   flutter run   --flavor dev
+    //   flutter build apk --release --flavor prod --dart-define=appFlavor=prod
+    flavorDimensions += "env"
+    productFlavors {
+        create("dev") {
+            dimension = "env"
+            // 与生产包区分开，可同时安装在同一台设备上
+            applicationIdSuffix = ".dev"
+            // 应用名见 src/dev/res/values/strings.xml（AGP 9 不允许在 flavor 里 resValue）
+        }
+        create("prod") {
+            dimension = "env"
+            // 生产包只保留 arm64-v8a，减小安装包体积
+            ndk {
+                abiFilters.clear()
+                abiFilters.addAll(listOf("arm64-v8a"))
+            }
+        }
     }
 
     buildTypes {

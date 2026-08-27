@@ -8,7 +8,8 @@ import 'main.dart';
 /// Local data mode entry point.
 ///
 /// Runs the app with hardcoded sample data — no backend needed.
-/// Default development mode.
+/// 适合纯 UI 开发；需要连后端请用默认入口 lib/main.dart 或 lib/main_remote.dart。
+///
 /// Launch with:
 /// ```bash
 /// flutter run --target lib/main_local.dart

@@ -3,22 +3,33 @@ import 'package:flutter_riverpod/flutter_riverpod.dart' hide Consumer;
 import 'package:provider/provider.dart';
 
 import 'config/dependencies.dart';
+import 'config/env.dart';
+import 'providers/repository_providers.dart';
 import 'providers/snackbar_provider.dart';
 import 'theme/app_theme.dart';
 import 'theme/theme_provider.dart';
 import 'ui/auth/splash_page.dart';
 
-/// Default entry: runs in local mode (no backend needed).
+/// 默认入口：按 flavor 自动选择远程后端，后端地址由 [Env.apiBaseUrl] 决定。
 ///
-/// To switch to remote mode, use:
+/// - prod flavor → 远程数据源 + 生产后端（https://trans.annya.work）
+/// - dev  flavor → 远程数据源 + 开发后端（Android 模拟器 http://10.0.2.2:8081）
+///
+/// 运行方式：
 /// ```bash
-/// flutter run --target lib/main_remote.dart
+/// flutter run --flavor dev                          # 开发
+/// flutter run --flavor prod --dart-define=appFlavor=prod   # 生产
 /// ```
+///
+/// 若想使用本地 mock 数据（不连后端），改用 lib/main_local.dart。
 void main() {
   runApp(
     ProviderScope(
+      overrides: [
+        repositoryModeProvider.overrideWithValue(RepositoryMode.remote),
+      ],
       child: MultiProvider(
-        providers: providersLocal,
+        providers: providersRemote,
         child: const MainApp(),
       ),
     ),

@@ -83,14 +83,14 @@ jobs:
           done < <(find ~/.gradle/caches/modules-2/files-2.1/io.agora.rtc/iris-rtc -name 'iris-rtc-*.aar')
           test "$patched" -eq 1 && echo "Agora patch verified"
 
-      - name: Build ARMv8 APK
-        run: flutter build apk --release --target lib/main_remote.dart --target-platform android-arm64
+      - name: Build ARMv8 APK (prod flavor)
+        run: flutter build apk --release --flavor prod --dart-define=appFlavor=prod --target lib/main_remote.dart --target-platform android-arm64
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: trans-platform-arm64-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: build/app/outputs/flutter-apk/app-prod-release.apk
           if-no-files-found: error
 
       - name: Download pgyer_upload.sh
@@ -106,4 +106,4 @@ jobs:
           SHORT_SHA="${GITHUB_SHA:0:7}"
           COMMIT_MSG="$(git log -1 --pretty=%B | head -n 1)"
           ./pgyer_upload.sh -j -d "GitHub Actions build ${SHORT_SHA}: ${COMMIT_MSG}" \
-            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/flutter-apk/app-prod-release.apk

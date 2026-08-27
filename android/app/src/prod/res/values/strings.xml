@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- prod flavor 应用名（默认 main 里也是 YX，这里显式声明） -->
+    <string name="app_name">YX</string>
+</resources>
