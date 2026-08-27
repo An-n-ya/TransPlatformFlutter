@@ -60,6 +60,29 @@ jobs:
           printf 'storeFile=my-ks.keystore\n' >> android/key.properties
           echo "key.properties written (alias=${#KEYSTORE_KEY_ALIAS} chars)"
 
+      - name: Verify keystore credentials
+        # 在签名前验证解码出的 keystore 与三个凭据是否真的匹配，
+        # 避免在 :packageProdRelease 阶段报晦涩的 “final block not properly padded”。
+        env:
+          KEYSTORE_STORE_PASSWORD: ${{ secrets.KEYSTORE_STORE_PASSWORD }}
+          KEYSTORE_KEY_PASSWORD: ${{ secrets.KEYSTORE_KEY_PASSWORD }}
+          KEYSTORE_KEY_ALIAS: ${{ secrets.KEYSTORE_KEY_ALIAS }}
+        run: |
+          set -e
+          # 1) store password + alias 能否打开 keystore
+          keytool -list -keystore android/app/my-ks.keystore \
+            -storepass "$KEYSTORE_STORE_PASSWORD" \
+            -alias "$KEYSTORE_KEY_ALIAS" >/dev/null 2>&1 \
+            || { echo "::error::store password or alias does NOT match the decoded keystore"; exit 1; }
+          # 2) key password 能否解密私钥（keytool 不导出私钥，用 openssl 验证）
+          if ! openssl pkcs12 -in android/app/my-ks.keystore \
+                -passin pass:"$KEYSTORE_STORE_PASSWORD" -nodes 2>/dev/null \
+                | grep -q "BEGIN PRIVATE KEY"; then
+            echo "::error::key password (KEYSTORE_KEY_PASSWORD) does NOT match the decoded keystore's private key"
+            exit 1
+          fi
+          echo "keystore credentials verified OK"
+
       - name: Build ARMv8 APK (prod flavor, release-signed)
         run: flutter build apk --release --flavor prod --dart-define=appFlavor=prod --target lib/main_remote.dart --target-platform android-arm64
 
