@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:trans_platform/ui/settings/debug/debug_page.dart';
 
+import '../../config/env.dart';
 import '../../data/repositories/user/user_repository.dart';
 import '../../data/services/token_storage_service.dart';
 import '../../domain/models/user.dart';
@@ -55,17 +56,19 @@ class SettingsPage extends StatelessWidget {
 
           const Divider(height: 1),
 
-          // ── Debug ──
-          ListTile(
-            leading: const Icon(Icons.bug_report_outlined),
-            title: const Text('调试'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => Navigator.of(
-              context,
-            ).push(MaterialPageRoute(builder: (_) => const DebugPage())),
-          ),
+          // ── Debug（仅开发模式显示）──
+          if (isDev) ...[
+            ListTile(
+              leading: const Icon(Icons.bug_report_outlined),
+              title: const Text('调试'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const DebugPage()),
+              ),
+            ),
 
-          const Divider(height: 1),
+            const Divider(height: 1),
+          ],
 
           // ── Logout ──
           const SizedBox(height: 32),

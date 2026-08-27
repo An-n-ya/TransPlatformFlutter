@@ -17,6 +17,9 @@ const String appFlavor = String.fromEnvironment(
 /// 是否生产环境（兼容 'prod' / 'production' 两种写法）。
 const bool isProduction = appFlavor == kFlavorProd || appFlavor == 'production';
 
+/// 是否开发环境（非生产）。
+const bool isDev = !isProduction;
+
 /// Environment configuration for the app.
 ///
 /// Tweak these values to match your setup.

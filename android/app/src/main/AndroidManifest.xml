@@ -1,4 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Required for any network access (release builds merge ONLY this manifest;
+         debug/profile manifests are not included in release APKs). Without it the app
+         cannot resolve hosts → ClientException: Failed host lookup errno=8 -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <!-- Location permissions for the "标记地点" (mark location) feature -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>

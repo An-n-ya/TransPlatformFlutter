@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../config/env.dart';
 
 import '../../theme/app_spacing.dart';
 import 'step_progress_indicator.dart';
@@ -44,7 +45,7 @@ class AuthScaffold extends StatelessWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: backEnabled ? BackButton(onPressed: onBack) : null,
-        actions: [?appBarAction],
+        actions: isProduction ? null : [?appBarAction],
       ),
       body: SafeArea(
         child: LayoutBuilder(
