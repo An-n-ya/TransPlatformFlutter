@@ -74,11 +74,12 @@ jobs:
             -storepass "$KEYSTORE_STORE_PASSWORD" \
             -alias "$KEYSTORE_KEY_ALIAS" >/dev/null 2>&1 \
             || { echo "::error::store password or alias does NOT match the decoded keystore"; exit 1; }
-          # 2) key password 能否解密私钥（keytool 不导出私钥，用 openssl 验证）
+          # 2) key password（Gradle 签名实际用的就是它）能否解密私钥。
+          #    注意：必须用 KEYSTORE_KEY_PASSWORD 而非 store 密码，否则会漏检！
           if ! openssl pkcs12 -in android/app/my-ks.keystore \
-                -passin pass:"$KEYSTORE_STORE_PASSWORD" -nodes 2>/dev/null \
+                -passin pass:"$KEYSTORE_KEY_PASSWORD" -nodes 2>/dev/null \
                 | grep -q "BEGIN PRIVATE KEY"; then
-            echo "::error::key password (KEYSTORE_KEY_PASSWORD) does NOT match the decoded keystore's private key"
+            echo "::error::KEYSTORE_KEY_PASSWORD does NOT match the decoded keystore. It should equal the keystore password (= KEYSTORE_STORE_PASSWORD)."
             exit 1
           fi
           echo "keystore credentials verified OK"
