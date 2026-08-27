@@ -38,3 +38,18 @@ jobs:
           name: trans-platform-arm64-apk
           path: build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
+
+      - name: Download pgyer_upload.sh
+        run: |
+          curl -sL -o pgyer_upload.sh \
+            https://raw.githubusercontent.com/PGYER/upload-app-api-example/main/shell-demo/pgyer_upload.sh
+          chmod +x pgyer_upload.sh
+
+      - name: Upload APK to PGYER
+        env:
+          PGYER_API_KEY: ${{ secrets.PGYER_API_KEY }}
+        run: |
+          SHORT_SHA="${GITHUB_SHA:0:7}"
+          COMMIT_MSG="$(git log -1 --pretty=%B | head -n 1)"
+          ./pgyer_upload.sh -j -d "GitHub Actions build ${SHORT_SHA}: ${COMMIT_MSG}" \
+            build/app/outputs/flutter-apk/app-release.apk
