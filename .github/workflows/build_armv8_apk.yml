@@ -29,6 +29,46 @@ jobs:
       - name: Flutter pub get
         run: flutter pub get
 
+      # First build downloads all Android deps into ~/.gradle, then fails at the
+      # known Agora manifest-merge namespace conflict (iris-rtc vs agora-special-full
+      # both declare package="io.agora.rtc"). We ignore that failure so the next
+      # step can patch the AARs in the Gradle cache (see fix_agora_aar.sh).
+      - name: Pre-build (fetch dependencies)
+        run: flutter build apk --release --target lib/main_remote.dart --target-platform android-arm64 || true
+
+      - name: Patch Agora AAR manifests
+        run: ./fix_agora_aar.sh
+
+      # fix_agora_aar.sh deletes the Gradle transform cache. The daemon from the
+      # pre-build still holds in-memory pointers to those deleted outputs, so it
+      # must be stopped (plus stale file-access journals cleared) or the next
+      # build fails with NoSuchFileException. All of these are safe caches.
+      - name: Reset Gradle daemon state
+        run: |
+          (cd android && ./gradlew --stop 2>/dev/null) || true
+          pkill -f GradleDaemon 2>/dev/null || true
+          rm -rf \
+            ~/.gradle/caches/journal-1 \
+            ~/.gradle/caches/fileHashes \
+            ~/.gradle/caches/fileContent
+
+      - name: Verify Agora AAR patch
+        run: |
+          aar_count=$(find ~/.gradle/caches/modules-2/files-2.1/io.agora.rtc/iris-rtc \
+            -name 'iris-rtc-*.aar' 2>/dev/null | wc -l)
+          test "$aar_count" -gt 0 || { echo "iris-rtc AAR not found — pre-build failed"; exit 1; }
+          patched=0
+          while IFS= read -r aar; do
+            tmp="$(mktemp -d)"
+            unzip -oq "$aar" AndroidManifest.xml -d "$tmp"
+            if grep -q 'package="io.agora.iris"' "$tmp/AndroidManifest.xml"; then
+              echo "OK patched: $(basename "$aar")"; patched=1
+            else
+              echo "UNPATCHED: $(basename "$aar")"; exit 1
+            fi
+          done < <(find ~/.gradle/caches/modules-2/files-2.1/io.agora.rtc/iris-rtc -name 'iris-rtc-*.aar')
+          test "$patched" -eq 1 && echo "Agora patch verified"
+
       - name: Build ARMv8 APK
         run: flutter build apk --release --target lib/main_remote.dart --target-platform android-arm64
 
