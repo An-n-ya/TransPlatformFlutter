@@ -91,6 +91,11 @@ flutter pub get
 #     the officially documented Flutter step for CI/CD that creates an archive,
 #     and it does not depend on `flutter pub get` side effects, which have
 #     shifted between Flutter versions.
+#
+#     iOS 没有原生 flavor（scheme），prod 环境通过 --dart-define=appFlavor=prod
+#     注入（与 Android 的 --dart-define 一致，见 lib/config/env.dart）。
+#     --dart-define 会写入 Generated.xcconfig 的 DART_DEFINES，后续 Xcode Cloud
+#     xcodebuild archive 自动生效。
 # ---------------------------------------------------------------------------
 echo "=== [ci_post_clone] ensuring CocoaPods is available ==="
 if ! command -v pod >/dev/null 2>&1; then
@@ -100,8 +105,8 @@ else
   echo "=== [ci_post_clone] CocoaPods found: $(pod --version 2>/dev/null || echo unknown) ==="
 fi
 
-echo "=== [ci_post_clone] flutter build ios --config-only ==="
-flutter build ios --config-only --no-codesign
+echo "=== [ci_post_clone] flutter build ios --config-only (prod) ==="
+flutter build ios --config-only --release --no-codesign --dart-define=appFlavor=prod
 
 echo "=== [ci_post_clone] verifying generated SPM package ==="
 SPM_PACKAGE_DIR="$PROJECT_ROOT/ios/Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage"

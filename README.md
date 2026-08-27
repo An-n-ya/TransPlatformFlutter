@@ -50,6 +50,9 @@ flutter build apk --release --flavor prod --dart-define=appFlavor=prod \
 >
 > iOS 未配置原生 flavor（scheme），如需区分后端只需传 `--dart-define`：
 > `flutter build ios --release --dart-define=appFlavor=prod`。
+>
+> Xcode Cloud 的 `ios/ci_scripts/ci_post_clone.sh` 已固定注入
+> `--dart-define=appFlavor=prod`，iOS CI 归档默认构建生产包。
 
 ### 入口文件
 
