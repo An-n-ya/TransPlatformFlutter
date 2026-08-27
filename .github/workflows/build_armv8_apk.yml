@@ -1,0 +1,40 @@
+name: Build ARMv8 APK
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Build arm64-v8a APK (remote)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Build ARMv8 APK
+        run: flutter build apk --release --target lib/main_remote.dart --target-platform android-arm64
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: trans-platform-arm64-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
