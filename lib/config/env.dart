@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 /// Environment configuration for the app.
 ///
 /// Tweak these values to match your setup.
@@ -11,10 +12,7 @@ class Env {
   /// - iOS 模拟器     → http://localhost:8081（默认即可）
   /// - 真机（同一 WiFi）→ http://192.168.1.14:8081
   /// - Web 浏览器     → http://localhost:8081
-  /// - Tailscale 远程 → http://100.122.220.40:8081
-  // static const String apiBaseUrl = 'http://100.122.220.40:8081';
-  // static const String apiBaseUrl = 'http://100.108.168.72:8081';
-  static const String apiBaseUrl = 'https://trans.annya.work';
+  static const String apiBaseUrl = appFlavor == 'production' ? 'https://trans.annya.work' : "http://10.0.2.2:8081";
 
   /// JWT access token for remote mode.
   static const String? accessToken = null;

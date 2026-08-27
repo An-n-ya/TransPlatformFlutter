@@ -13,6 +13,8 @@
             "args": [
                 "--target",
                 "lib/main_remote.dart",
+                "--flavor",
+                "dev",
                 "-d",
                 "emulator-5554"
             ]

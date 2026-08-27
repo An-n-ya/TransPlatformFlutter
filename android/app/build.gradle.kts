@@ -24,6 +24,12 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        // FIXME: 只在production flavor下使用下面配置
+        //ndk {
+        //    abiFilters.clear()
+        //    abiFilters.addAll(listOf("arm64-v8a"))
+        //}
+
     }
 
     buildTypes {
