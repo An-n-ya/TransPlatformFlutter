@@ -42,13 +42,25 @@ jobs:
             && echo "keystore OK ($(stat -c%s android/app/my-ks.keystore) bytes)" \
             || { echo "ERROR: android/app/my-ks.keystore is missing or empty"; exit 1; }
 
-      - name: Build ARMv8 APK (prod flavor, release-signed)
+      - name: Write signing config
+        # 与本地 android/key.properties 完全相同的读取路径，避免依赖 env 传递。
+        # 任一 secret 为空时会带具体名称直接报错。
         env:
-          # 与 android/key.properties 对应的凭据，从 GitHub secrets 注入。
-          # 如果 store 与 key 密码相同，两个 secret 填同一个值即可。
           KEYSTORE_STORE_PASSWORD: ${{ secrets.KEYSTORE_STORE_PASSWORD }}
           KEYSTORE_KEY_PASSWORD: ${{ secrets.KEYSTORE_KEY_PASSWORD }}
           KEYSTORE_KEY_ALIAS: ${{ secrets.KEYSTORE_KEY_ALIAS }}
+        run: |
+          set -e
+          : "${KEYSTORE_STORE_PASSWORD:?ERROR: secret KEYSTORE_STORE_PASSWORD is empty or not set}"
+          : "${KEYSTORE_KEY_PASSWORD:?ERROR: secret KEYSTORE_KEY_PASSWORD is empty or not set}"
+          : "${KEYSTORE_KEY_ALIAS:?ERROR: secret KEYSTORE_KEY_ALIAS is empty or not set}"
+          printf 'storePassword=%s\n' "$KEYSTORE_STORE_PASSWORD" > android/key.properties
+          printf 'keyPassword=%s\n' "$KEYSTORE_KEY_PASSWORD" >> android/key.properties
+          printf 'keyAlias=%s\n' "$KEYSTORE_KEY_ALIAS" >> android/key.properties
+          printf 'storeFile=my-ks.keystore\n' >> android/key.properties
+          echo "key.properties written (alias=${#KEYSTORE_KEY_ALIAS} chars)"
+
+      - name: Build ARMv8 APK (prod flavor, release-signed)
         run: flutter build apk --release --flavor prod --dart-define=appFlavor=prod --target lib/main_remote.dart --target-platform android-arm64
 
       - name: Upload APK artifact
