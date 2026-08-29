@@ -12,7 +12,7 @@ import 'ui/auth/splash_page.dart';
 
 /// 默认入口：按 flavor 自动选择远程后端，后端地址由 [Env.apiBaseUrl] 决定。
 ///
-/// - prod flavor → 远程数据源 + 生产后端（https://trans.annya.work）
+/// - prod flavor → 远程数据源 + 生产后端（https://yx.annya.work）
 /// - dev  flavor → 远程数据源 + 开发后端（Android 模拟器 http://10.0.2.2:8081）
 ///
 /// 运行方式：
