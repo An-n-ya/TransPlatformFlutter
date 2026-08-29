@@ -92,10 +92,6 @@ flutter pub get
 #     and it does not depend on `flutter pub get` side effects, which have
 #     shifted between Flutter versions.
 #
-#     iOS 没有原生 flavor（scheme），prod 环境通过 --dart-define=appFlavor=prod
-#     注入（与 Android 的 --dart-define 一致，见 lib/config/env.dart）。
-#     --dart-define 会写入 Generated.xcconfig 的 DART_DEFINES，后续 Xcode Cloud
-#     xcodebuild archive 自动生效。
 # ---------------------------------------------------------------------------
 echo "=== [ci_post_clone] ensuring CocoaPods is available ==="
 if ! command -v pod >/dev/null 2>&1; then
